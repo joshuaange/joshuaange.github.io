@@ -131,7 +131,9 @@
     }
 
     .btn {
-      display: inline-block;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2.5rem;
       font-family: var(--mono);
       font-size: 0.72rem;
       font-weight: 500;
@@ -159,10 +161,10 @@
     }
 
     .hero-photo {
-      width: 180px;
-      height: 220px;
+      width: 195px;
+      height: 200px;
       object-fit: cover;
-      object-position: center top;
+      object-position: center;
       filter: grayscale(10%);
       border: 1px solid var(--rule);
     }
@@ -466,21 +468,15 @@
   <!-- HERO -->
   <section id="home">
     <div class="hero-text">
-      <p class="title-line">PhD Student &mdash; Columbia University</p>
+      <p class="title-line">PhD Student &mdash; University of Cambridge</p>
       <h1 class="fade-in">Joshua<br>Ange</h1>
       <p class="fade-in" style="animation-delay:0.1s">
-        I am a first-year PhD student in the Department of Physics at Columbia University, advised by Colin Hill. My research centers on the cosmic microwave background, large-scale structure, and what the universe's oldest light can tell us about its composition and evolution.
+        I am an incoming PhD student in the Department of Physics at Columbia University. My work centers on cosmology and extracting robust information from some of the largest-scale observations of the universe. My past work has largely focused on cosmic microwave background (CMB) lensing + delensing, thermal Sunyaev-Zel'dovich (tSZ) cluster cosmology, and CMB foreground simulation and contamination.
       </p>
       <p class="fade-in" style="animation-delay:0.2s">
-        Previously I completed an MPhil at Cambridge (Churchill Scholar) with Boris Bolliet and Blake Sherwin, and a B.S. in Physics and Mathematics at SMU with Joel Meyers.
+        Previously, I was a Churchill Scholar at the University of Cambridge, working with Boris Bolliet and Blake Sherwin. And before that, completed a B.S. in Physics and Mathematics at Southern Methodist University, working with Joel Meyers.
       </p>
-      <div class="hero-links fade-in" style="animation-delay:0.3s">
-        <a class="btn btn-filled" href="mailto:ja4020@columbia.edu">Email</a>
-        <a class="btn" href="https://arxiv.org/search/?query=ange+joshua&searchtype=author" target="_blank" rel="noopener">arXiv</a>
-        <a class="btn" href="https://github.com/joshuaange" target="_blank" rel="noopener">GitHub</a>
-      </div>
     </div>
-    <!-- Replace face.png with your preferred photo; delete this img tag to remove it -->
     <img src="face.png" alt="Joshua Ange" class="hero-photo fade-in" style="animation-delay:0.15s" onerror="this.style.display='none'" />
   </section>
 
@@ -492,10 +488,12 @@
       <div class="research-card fade-in">
         <div class="stripe"></div>
         <div>
-          <h3>CMB Cosmology &amp; Large-Scale Structure</h3>
-          <p>I work on extracting cosmological information from CMB temperature and polarization maps, including delensing, higher-order lensing statistics, and thermal Sunyaev-Zel'dovich cluster counts. A current focus is using tSZ cluster abundances to disentangle ultra-light axion dark matter from baryonic feedback.</p>
+          <h3>Cosmology</h3>
+          <p>I work on extracting cosmological information from CMB maps. This includes foreground simulations and point-source detection and removal pipelines for the proposed high-resolution CMB-HD telescope. My current focuses are on using tSZ cluster abundances to disentangle ultra-light axion dark matter from baryonic feedback, and computing higher-order lensing information of the CMB.
+          </p>
           <div class="tags">
             <span class="tag">CMB</span>
+            <span class="tag">Foregrounds</span>
             <span class="tag">Delensing</span>
             <span class="tag">tSZ</span>
             <span class="tag">Dark Matter</span>
@@ -507,12 +505,14 @@
       <div class="research-card fade-in" style="animation-delay:0.1s">
         <div class="stripe"></div>
         <div>
-          <h3>CMB-HD Foregrounds</h3>
-          <p>I have contributed to foreground simulations and point-source detection and removal pipelines for the proposed CMB-HD next-generation telescope, which will map the microwave sky at arcminute resolution with unprecedented sensitivity.</p>
+          <h3>Astrophysics &amp; Related Work</h3>
+          <p>My earlier work in high-energy astrophysics involved machine-learning methods to classify high-redshift Gamma-Ray Bursts from their prompt and pleateau emission phases, and detector characterization for the SuperCDMS SNOLAB dark matter experiment. I've also done work with machine-learning and stylometric analysis of astrophysics literature.</p>
           <div class="tags">
-            <span class="tag">CMB-HD</span>
-            <span class="tag">Foregrounds</span>
-            <span class="tag">Source Removal</span>
+            <span class="tag">Gamma-Ray Bursts</span>
+            <span class="tag">Dark Matter</span>
+            <span class="tag">SNOLAB</span>
+            <span class="tag">Stylometry</span>
+            <span class="tag">Machine Learning</span>
           </div>
         </div>
       </div>
@@ -520,12 +520,12 @@
       <div class="research-card fade-in" style="animation-delay:0.2s">
         <div class="stripe"></div>
         <div>
-          <h3>Quantum Information &amp; Instrumentation</h3>
-          <p>Earlier work included photonic quantum computing, boson sampling for random number generation on the Xanadu X8 processor, and detector characterization for the SuperCDMS SNOLAB dark matter experiment.</p>
+          <h3>Quantum Information</h3>
+          <p>Earlier work included photonic quantum computing. This involved the modeling of high-dimensional quantum photonic systems, Boson Sampling-based true random number generation, and studying how machine learning models can develop quantum architectures.</p>
           <div class="tags">
             <span class="tag">Quantum Photonics</span>
             <span class="tag">Boson Sampling</span>
-            <span class="tag">SuperCDMS</span>
+            <span class="tag">Machine Learning</span>
           </div>
         </div>
       </div>
@@ -539,18 +539,29 @@
     <ol class="pub-list">
 
       <li>
-        <span class="pub-num">10</span>
+        <span class="pub-num"></span>
         <div class="pub-body">
-          <div class="pub-title">Stylometric and Formal Patterns in the Scholarly Impact of Scientific Literature</div>
-          <div class="pub-authors"><strong>J. Ange</strong>, E. Godat, R. Sudan</div>
+          <div class="pub-title">CMB-HD Foregrounds: Simulations, Source Detection, and Foreground Removal</div>
+          <div class="pub-authors">A. McInnis, <strong>J. Ange</strong>, N. Sehgal, J. Kable, I. Fite</div>
           <div class="pub-venue">
-            <span>SMU J. Undergrad. Research 9(2), 2026</span>
+            <span class="pub-status">In submission (2026)</span>
           </div>
         </div>
       </li>
 
       <li>
-        <span class="pub-num">9</span>
+        <span class="pub-num"></span>
+        <div class="pub-body">
+          <div class="pub-title">Stylometric and Formal Patterns in the Scholarly Impact of Scientific Literature</div>
+          <div class="pub-authors"><strong>J. Ange</strong>, E. Godat, R. Sudan</div>
+          <div class="pub-venue">
+            <span class="pub-status">In submission (2026)</span>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <span class="pub-num"></span>
         <div class="pub-body">
           <div class="pub-title">Optimization and Realization of Boson Sampling for True Random Number Generation Using the Xanadu X8</div>
           <div class="pub-authors"><strong>J. Ange</strong>, M. A. Thornton</div>
@@ -562,7 +573,7 @@
       </li>
 
       <li>
-        <span class="pub-num">8</span>
+        <span class="pub-num"></span>
         <div class="pub-body">
           <div class="pub-title">Modeling and Simulation of Multiple-Valued and Nonlinear Quantum Photonic Components</div>
           <div class="pub-authors"><strong>J. Ange</strong>, M. Tuller, J. M. Henderson, E. R. Henderson, B. A. Moores, D. L. MacFarlane, M. A. Thornton</div>
@@ -574,7 +585,7 @@
       </li>
 
       <li>
-        <span class="pub-num">7</span>
+        <span class="pub-num"></span>
         <div class="pub-body">
           <div class="pub-title">Programming Quantum Computers with Large Language Models</div>
           <div class="pub-authors">E. R. Henderson, J. M. Henderson, <strong>J. Ange</strong>, M. A. Thornton</div>
@@ -586,7 +597,7 @@
       </li>
 
       <li>
-        <span class="pub-num">6</span>
+        <span class="pub-num"></span>
         <div class="pub-body">
           <div class="pub-title">GRB Redshift Classifier to Follow Up High-Redshift GRBs Using Supervised Machine Learning</div>
           <div class="pub-authors">M. G. Dainotti, S. Bhardwaj, C. Cook, <strong>J. Ange</strong>, et al.</div>
@@ -599,31 +610,7 @@
       </li>
 
       <li>
-        <span class="pub-num">5</span>
-        <div class="pub-body">
-          <div class="pub-title">Characterization of XIA UltraLo-1800 Response to Measuring Charged Samples</div>
-          <div class="pub-authors"><strong>J. Ange</strong>, R. Calkins, A. Posada</div>
-          <div class="pub-venue">
-            <span>JINST 18, P01027 (2023)</span>
-            <a href="https://doi.org/10.1088/1748-0221/18/01/P01027" target="_blank" rel="noopener">DOI</a>
-            <a href="https://arxiv.org/abs/2209.08002" target="_blank" rel="noopener">arXiv:2209.08002</a>
-          </div>
-        </div>
-      </li>
-
-      <li>
-        <span class="pub-num">4</span>
-        <div class="pub-body">
-          <div class="pub-title">Computing the All-Orders Lensing Trispectrum of the CMB</div>
-          <div class="pub-authors"><strong>J. Ange</strong>, J. Meyers</div>
-          <div class="pub-venue">
-            <span class="pub-status">In preparation (2027)</span>
-          </div>
-        </div>
-      </li>
-
-      <li>
-        <span class="pub-num">3</span>
+        <span class="pub-num"></span>
         <div class="pub-body">
           <div class="pub-title">Improving Constraints on Models Addressing the Hubble Tension with CMB Delensing</div>
           <div class="pub-authors"><strong>J. Ange</strong>, J. Meyers</div>
@@ -636,23 +623,14 @@
       </li>
 
       <li>
-        <span class="pub-num">2</span>
+        <span class="pub-num"></span>
         <div class="pub-body">
-          <div class="pub-title">CMB-HD Foregrounds: Simulations, Source Detection, and Foreground Removal</div>
-          <div class="pub-authors">A. McInnis, <strong>J. Ange</strong>, N. Sehgal, J. Kable, I. Fite</div>
+          <div class="pub-title">Characterization of XIA UltraLo-1800 Response to Measuring Charged Samples</div>
+          <div class="pub-authors"><strong>J. Ange</strong>, R. Calkins, A. Posada</div>
           <div class="pub-venue">
-            <span class="pub-status">In preparation (2026)</span>
-          </div>
-        </div>
-      </li>
-
-      <li>
-        <span class="pub-num">1</span>
-        <div class="pub-body">
-          <div class="pub-title">Not All Suppressions Are Equal: Disentangling Ultra-Light Axions from Baryonic Feedback with tSZ Cluster Counts</div>
-          <div class="pub-authors"><strong>J. Ange</strong>, I. Zubeldia, B. Sherwin, B. Bolliet</div>
-          <div class="pub-venue">
-            <span class="pub-status">In preparation (2027)</span>
+            <span>JINST 18, P01027 (2023)</span>
+            <a href="https://doi.org/10.1088/1748-0221/18/01/P01027" target="_blank" rel="noopener">DOI</a>
+            <a href="https://arxiv.org/abs/2209.08002" target="_blank" rel="noopener">arXiv:2209.08002</a>
           </div>
         </div>
       </li>
@@ -662,26 +640,30 @@
 
   <!-- CV -->
   <section id="cv">
-    <p class="section-label">Education &amp; Positions</p>
+    <div>
+      <a href="CV.pdf" target="_blank" rel="noopener" class="btn" style="font-size:0.65rem; padding:0.35rem 0.9rem;">Download Full CV</a>
+    </div>
+    <div class="section-header">
+      <p class="section-label">Education &amp; Positions
+      </p>
+    </div>
     <ul class="timeline">
-
+ 
       <li class="timeline-item">
-        <span class="timeline-date">2026 – Present</span>
+        <span class="timeline-date">Fall 2026</span>
         <div class="timeline-body">
           <h3>PhD in Physics</h3>
-          <div class="place">Columbia University</div>
-          <div class="detail">Advisor: Colin Hill &bull; Department of Physics, GSAS</div>
-          <div class="detail">NSF Graduate Research Fellow</div>
+          <div class="place">Department of Physics, Columbia University</div>
         </div>
       </li>
 
       <li class="timeline-item">
-        <span class="timeline-date">2025 – 2026</span>
+        <span class="timeline-date">2025 – Present</span>
         <div class="timeline-body">
           <h3>MPhil in Physics</h3>
-          <div class="place">University of Cambridge</div>
-          <div class="detail">Advisors: Boris Bolliet &amp; Blake Sherwin &bull; Cavendish Astrophysics / Kavli Institute for Cosmology</div>
-          <div class="detail">Churchill Scholarship</div>
+          <div class="place">Cavendish Astrophysics / Kavli Institute for Cosmology, University of Cambridge</div>
+          <div class="detail">Advisors: Boris Bolliet &amp; Blake Sherwin</div>
+          <div class="detail"><em>Churchill Scholarship</em></div>
         </div>
       </li>
 
@@ -689,22 +671,31 @@
         <span class="timeline-date">2021 – 2025</span>
         <div class="timeline-body">
           <h3>B.S. Physics &amp; B.S. Mathematics</h3>
-          <div class="place">Southern Methodist University</div>
-          <div class="detail">Advisor: Joel Meyers &bull; Dedman College &bull; <em>Summa Cum Laude</em></div>
+          <div class="place">Dedman College, Southern Methodist University</div>
+          <div class="detail">Advisor: Joel Meyers</div>
           <div class="detail">Minors in English &amp; Computer Science</div>
+          <div class="detail"><em>Summa Cum Laude</em></div>
         </div>
       </li>
 
     </ul>
 
-    <p class="section-label" style="margin-top:3rem">Honors &amp; Awards</p>
+    <p class="section-label" style="margin-top:3rem">Notable Honors &amp; Awards</p>
     <ul class="awards-list">
 
       <li class="award-item">
         <span class="award-year">2026</span>
         <div>
-          <div class="award-name">NSF Graduate Research Fellowship</div>
-          <div class="award-desc">National Science Foundation &mdash; recognizes outstanding graduate students in STEM</div>
+          <div class="award-name">Graduate Research Fellowship</div>
+          <div class="award-desc">(National Science Foundation)  Awarded to outstanding graduate students in STEM fields</div>
+        </div>
+      </li>
+
+      <li class="award-item">
+        <span class="award-year">2025</span>
+        <div>
+          <div class="award-name">Graduate Research Fellowship </div>
+          <div class="award-desc">(National Science Foundation) Awarded to outstanding graduate students in STEM fields</div>
         </div>
       </li>
 
@@ -712,7 +703,7 @@
         <span class="award-year">2025&ndash;26</span>
         <div>
           <div class="award-name">Churchill Scholarship</div>
-          <div class="award-desc">University of Cambridge &mdash; 16 recipients annually from the U.S., awarded on academic and research merit</div>
+          <div class="award-desc">(University of Cambridge / Churchill Foundation) Awarded to 16 recipients annually from the U.S. to study at the University of Cambridge on the basis of academic/research achievement and scientific impact</div>
         </div>
       </li>
 
@@ -720,7 +711,7 @@
         <span class="award-year">2025</span>
         <div>
           <div class="award-name">Dedman College Outstanding Senior</div>
-          <div class="award-desc">Southern Methodist University &mdash; one senior per year for exceptional scholarship, leadership, and service</div>
+          <div class="award-desc">(Southern Methodist University) Honor given to one senior student in Dedman College who exemplifies exceptional scholarship, leadership, and service to the university</div>
         </div>
       </li>
 
@@ -728,7 +719,7 @@
         <span class="award-year">2024</span>
         <div>
           <div class="award-name">Robert S. Hyer Award in Physics</div>
-          <div class="award-desc">Southern Methodist University &mdash; for highest academic achievement in physics</div>
+          <div class="award-desc">(Southern Methodist University) Nominated and awarded for student who performs "at the highest academic level" in physics</div>
         </div>
       </li>
 
@@ -736,7 +727,7 @@
         <span class="award-year">2023</span>
         <div>
           <div class="award-name">Barry Goldwater Scholarship</div>
-          <div class="award-desc">Most prestigious undergraduate scholarship in the natural sciences, engineering, and mathematics</div>
+          <div class="award-desc">(Goldwater Foundation)  The "most prestigious national undergraduate scholarship" for excellence in natural sciences, engineering, or math research in the United States</div>
         </div>
       </li>
 
@@ -747,13 +738,17 @@
   <section id="contact">
     <p class="section-label">Contact</p>
     <div class="contact-block">
+      
       <div class="contact-field">
         <label>Email</label>
+        <a href="mailto:joshange@gmail.com">joshange@gmail.com</a>
+        <label></label>
         <a href="mailto:ja4020@columbia.edu">ja4020@columbia.edu</a>
       </div>
+
       <div class="contact-field">
         <label>Department</label>
-        <span>Department of Physics<br>Columbia University, New York NY</span>
+        <span>Cavendish Astrophysics<br>University of Cambridge, Cambridgeshire, UK</span>
       </div>
       <div class="contact-field">
         <label>arXiv</label>
@@ -763,12 +758,20 @@
         <label>GitHub</label>
         <a href="https://github.com/joshuaange" target="_blank" rel="noopener">github.com/joshuaange</a>
       </div>
+      <div class="contact-field">
+        <label>ORCID</label>
+        <a href="https://orcid.org/0000-0001-7368-7104" target="_blank" rel="noopener">orcid.org/0000-0001-7368-7104</a>
+      </div>
+      <div class="contact-field">
+        <label>Inspire HEP</label>
+        <a href="https://inspirehep.net/literature?sort=mostrecent&size=25&page=1&q=a%20Joshua.Ange.1&ui-citation-summary=true" target="_blank" rel="noopener">inspirehep.net</a>
+      </div>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
-    <p>Joshua Ange &mdash; Columbia University</p>
+    <p>Joshua Ange &mdash; University of Cambridge</p>
     <p>Updated May 2026</p>
   </footer>
 
