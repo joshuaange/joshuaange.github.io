@@ -604,7 +604,27 @@ function formatDateDisplay(str) {
 
 // Set nav game link to today (no nav in standalone mode, but keep for potential future use)
 
-const puzzleDateStr = getDateParam();
+function getMostRecentPuzzleDate() {
+  const dates = Object.keys(PUZZLES);
+
+  // sort YYYY-MM-DD lexicographically works correctly
+  dates.sort();
+
+  return dates[dates.length - 1];
+}
+
+function getPuzzleDate() {
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('d');
+
+  if (requested && PUZZLES[requested]) {
+    return requested;
+  }
+
+  return getMostRecentPuzzleDate();
+}
+
+const puzzleDateStr = getPuzzleDate();
 const PUZZLE = PUZZLES[puzzleDateStr];
 
 if (!PUZZLE) {
