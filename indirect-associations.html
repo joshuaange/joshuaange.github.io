@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indirect Association — Joshua Ange</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+/* ── FONTS ── */
+
+:root {
+  /* Site palette — matches joshuaange.github.io */
+  --ink: #0f0f0e;
+  --paper: #f5f3ee;      /* warm beige — page background */
+  --warm: #ede9e0;       /* slightly deeper beige — word bank */
+  --surface: #faf8f4;    /* cream — board card */
+  --accent: #2a4a7f;     /* site blue */
+  --muted: #6b6660;
+  --rule: #d4cfc8;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+
+  /* Hub colours — saturated so white words read cleanly */
+  --hub-1: #4e9a5e;   /* sage green */
+  --hub-2: #3b6dbf;   /* steel blue */
+  --hub-3: #b56d1e;   /* amber */
+  --hub-4: #8050a0;   /* mauve */
+
+  /* Tile */
+  --tile-bg: #2a2826;
+  --tile-text: #f5f3ee;
+  --tile-empty-bg: #e8e4db;    /* warm — sits nicely on cream card */
+  --tile-empty-border: #ccc8c0;
+  --tile-hover-bg: #ddd6c8;    /* warm hover, not blue */
+  --tile-hover-border: #a09888;
+
+  --hand: 'Patrick Hand', cursive; /* handwriting font for notes — upright, legible */
+  --slot-w: 112px;
+  --slot-h: 40px;
+  --conn-h: 28px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+
+/* PAGE */
+.page-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Make direct children full-width except the header */
+.page-wrap > * { width: 100%; }
+
+/* HEADER */
+.page-header {
+  margin-bottom: 1.8rem;
+  text-align: center;
+}
+.page-header h1 {
+  font-family: var(--mono);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 500;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  margin-bottom: .2rem;
+}
+.page-header .subtitle {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ATTEMPTS */
+.attempts-bar {
+  display: flex; align-items: center; justify-content: center; gap: .7rem;
+  margin-bottom: 1.2rem;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.attempt-pips { display: flex; gap: .3rem; }
+.pip {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid var(--muted); background: transparent;
+  transition: background .25s;
+}
+.pip.used { background: var(--ink); border-color: var(--ink); }
+
+/* FEEDBACK */
+.feedback {
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .04em;
+  color: var(--muted); min-height: 1.3rem; margin-bottom: 1.2rem;
+}
+.feedback.correct  { color: #2d7a3a; }
+.feedback.incorrect { color: #b03030; }
+
+/* WORD BANK */
+.word-bank-section { margin-bottom: 1.4rem; }
+.word-bank {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem;
+  padding: .8rem;
+  border-radius: 10px; background: var(--warm);
+  border: 1px solid var(--rule);
+}
+.word-token {
+  font-family: var(--mono); font-size: .72rem; font-weight: 500;
+  letter-spacing: .04em; text-transform: uppercase;
+  padding: .45rem .9rem; border-radius: 6px;
+  background: var(--tile-bg); color: var(--tile-text);
+  border: none; cursor: grab; user-select: none;
+  transition: background .12s, transform .1s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.word-token:hover { background: #3f3f46; transform: translateY(-1px); }
+.word-token:active { transform: translateY(0); }
+.word-token.is-dragging { opacity: .35; }
+.word-token.placed { display: none; }
+
+/* BOARD */
+.board-section { margin-bottom: 1.8rem; }
+.board-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 1.6rem 1.2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.04);
+}
+.board { display: flex; flex-direction: column; gap: 0; }
+
+/* "…just as…" divider */
+.just-as-divider {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .6rem 0;
+  font-family: var(--mono); font-style: normal; font-size: .68rem;
+  letter-spacing: .12em; text-transform: uppercase; color: #aaa;
+}
+.just-as-divider::before,
+.just-as-divider::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+/* ANALOGY LINE — the horizontal bar is drawn as a single full-width
+   pseudo-element on the line itself, so hub-block padding never breaks it */
+.analogy-line {
+  display: flex; align-items: center;
+  padding: .35rem 0;
+  border-radius: 8px;
+  transition: background .35s;
+  position: relative; /* needed for ::before positioning */
+}
+/* The single continuous horizontal line */
+.analogy-line::before {
+  content: ''; pointer-events: none;
+  position: absolute; left: 0; right: 0;
+  top: 50%; transform: translateY(-50%);
+  height: 2px; background: var(--rule);
+  transition: background .35s;
+  z-index: 0;
+}
+.analogy-line.line-solved { background: rgba(42,74,127,.05); }
+.analogy-line.line-solved::before { background: var(--accent); }
+/* v-seg still darkens for the vertical connectors inside hubs */
+.analogy-line.line-solved .v-seg { background: var(--accent); }
+
+/* Hub-connector: flex column with "is to" above the line, note below */
+.hub-connector {
+  flex: 1; min-width: 60px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+  gap: 3px;
+}
+/* "is to" label */
+.is-to-label {
+  font-family: var(--mono); font-size: .62rem;
+  letter-spacing: .1em; text-transform: uppercase; color: #aaa;
+  white-space: nowrap; padding: 0 .5rem; line-height: 1;
+  background: var(--surface);
+  position: relative; z-index: 2;
+  transition: background .35s, color .35s;
+}
+.analogy-line.line-solved .is-to-label {
+  background: transparent;
+  color: var(--accent);
+}
+/* connector note — handwritten, below the line */
+.connector-note {
+  font-family: var(--hand); font-size: .95rem;
+  text-align: center;
+  border: none; outline: none; background: var(--surface);
+  color: #999; width: 100%;
+  padding: 0 .5rem; line-height: 1;
+  position: relative; z-index: 2;
+  transition: background .35s, color .35s;
+}
+.connector-note::placeholder { color: #ccc; }
+.connector-note:focus { color: #555; }
+.analogy-line.line-solved .connector-note {
+  background: transparent;
+  color: rgba(42,74,127,.5);
+}
+.analogy-line.line-solved .connector-note::placeholder { color: rgba(42,74,127,.3); }
+.analogy-line.line-solved .connector-note:focus { color: var(--accent); }
+
+/* Hub block sits above the line (z-index:1) and uses the card background
+   so it naturally masks the ::before line behind it — no visible gap */
+.hub-block {
+  display: flex; flex-direction: row; align-items: center;
+  padding: .3rem;
+  border: 2px solid transparent; border-radius: 10px;
+  transition: background .2s, border-color .2s;
+  user-select: none;
+  position: relative; z-index: 1;
+  background: var(--surface); /* masks the line behind the block */
+}
+.hub-block.drag-over-block { border-color: var(--accent); }
+
+/* h-conn is now just a visual spacer — the ::before line handles the actual bar */
+.h-conn { width: 14px; height: 2px; flex-shrink: 0; background: transparent; }
+.vert-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; position: relative; z-index: 1; }
+.v-seg { width: 2px; height: var(--conn-h); background: var(--rule); transition: background .35s; }
+
+/* Hub note input — Caveat handwriting font, clearly distinct from puzzle content */
+.hub-note {
+  width: 60px; height: 22px;
+  font-family: var(--hand); font-size: 1rem; font-weight: 400;
+  text-align: center;
+  border: none; border-bottom: 1px dashed #ccc; background: transparent;
+  color: #999; outline: none; flex-shrink: 0; cursor: text;
+  position: relative; z-index: 1;
+}
+.hub-note::placeholder { color: #ccc; }
+.hub-note:focus { border-bottom-color: #888; color: #555; }
+.hub-block[class*="confirmed-"] .hub-note {
+  border-bottom-color: rgba(255,255,255,.3); color: rgba(255,255,255,.65);
+}
+.hub-block[class*="confirmed-"] .hub-note:focus {
+  border-bottom-color: rgba(255,255,255,.7); color: #fff;
+}
+.hub-block[class*="confirmed-"] .hub-note::placeholder { color: rgba(255,255,255,.3); }
+
+/* WORD SLOT */
+.word-slot {
+  width: var(--slot-w); height: var(--slot-h);
+  border-radius: 6px;
+  background: var(--tile-empty-bg);
+  border: 2px dashed var(--tile-empty-border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+  overflow: hidden;
+}
+.word-slot:hover {
+  border-color: var(--tile-hover-border);
+  background: var(--tile-hover-bg);
+  box-shadow: 0 0 0 3px rgba(160,152,136,.18);
+}
+.word-slot.drag-over {
+  border-color: var(--accent);
+  background: #dce6f0;
+  box-shadow: 0 0 0 3px rgba(42,74,127,.15);
+  border-style: solid;
+}
+.slot-label {
+  font-family: var(--mono); font-size: .58rem; letter-spacing: .08em;
+  text-transform: uppercase; color: #bbb; pointer-events: none;
+}
+
+/* Placed word fills slot exactly */
+.placed-word {
+  font-family: var(--mono); font-size: .7rem; font-weight: 500;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--tile-text); background: var(--tile-bg);
+  border-radius: 4px;
+  cursor: grab; user-select: none;
+  /* fill the slot fully */
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.placed-word:hover { background: #3f3f46; }
+
+/* Locked placed word (inside confirmed hub) */
+.placed-word-locked {
+  font-family: var(--mono); font-size: .7rem; font-weight: 500;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: rgba(255,255,255,.92); background: rgba(0,0,0,.18);
+  border-radius: 4px;
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: default; user-select: none; pointer-events: none;
+}
+
+/* CONFIRMED BLOCK COLOURS — explicit backgrounds mask the analogy-line::before rule */
+.hub-block.confirmed-1 { background: var(--hub-1); border-color: var(--hub-1); }
+.hub-block.confirmed-2 { background: var(--hub-2); border-color: var(--hub-2); }
+.hub-block.confirmed-3 { background: var(--hub-3); border-color: var(--hub-3); }
+.hub-block.confirmed-4 { background: var(--hub-4); border-color: var(--hub-4); }
+.hub-block[class*="confirmed-"] .word-slot { background: transparent; border: none; }
+.hub-block[class*="confirmed-"] .h-conn { background: transparent; }
+.hub-block[class*="confirmed-"] .v-seg  { background: rgba(255,255,255,.35); }
+.hub-block.locked { cursor: grab; }
+.hub-block.locked:active { cursor: grabbing; }
+.hub-block.line-locked { cursor: default; }
+
+/* CONTROLS */
+.controls {
+  display: flex; gap: .8rem; align-items: center; justify-content: center;
+  margin-bottom: 2rem; flex-wrap: wrap;
+}
+.btn {
+  font-family: var(--mono); font-size: .68rem; font-weight: 500;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: .55rem 1.3rem; border-radius: 6px;
+  border: 1.5px solid var(--accent); color: var(--accent);
+  background: transparent; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.btn:hover { background: var(--accent); color: #fff; }
+.btn:disabled { border-color: var(--rule); color: var(--muted); cursor: not-allowed; }
+.btn:disabled:hover { background: transparent; color: var(--muted); }
+.btn-filled { background: var(--accent); color: #fff; }
+.btn-filled:hover { background: #2d4aa0; }
+
+/* MODALS */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  opacity: 0; animation: modalIn .22s ease forwards;
+}
+@keyframes modalIn { to { opacity: 1; } }
+.modal-backdrop.closing { animation: modalOut .18s ease forwards; pointer-events: none; }
+@keyframes modalOut { to { opacity: 0; } }
+
+.modal {
+  background: var(--paper); border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.06);
+  max-width: 750px;
+  width: min(750px, 95vw);
+  padding: 1.5rem 1.6rem;
+  position: relative;
+  transform: translateY(14px); animation: modalSlide .22s ease forwards;
+}
+@keyframes modalSlide { to { transform: translateY(0); } }
+
+.modal h2 {
+  font-family: var(--mono); font-size: 1.25rem; font-weight: 500;
+  letter-spacing: -.01em; margin-bottom: 1rem; color: var(--ink);
+}
+.modal p { font-size: .9rem; color: var(--muted); margin-bottom: .5rem; line-height: 1.55; }
+.modal p strong { color: var(--ink); font-weight: 500; }
+
+.modal-close {
+  position: absolute; top: .9rem; right: 1rem;
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .06em;
+  color: var(--muted); background: none; border: none; cursor: pointer;
+  padding: .2rem .4rem; transition: color .12s;
+}
+.modal-close:hover { color: var(--ink); }
+.modal-footer { margin-top: 1.4rem; display: flex; justify-content: flex-end; }
+
+/* COMPLETION MODAL */
+.modal-completion h2 { font-size: 1.4rem; }
+.modal-completion > .modal { max-width: 750px; overflow-y: auto; max-height: 90vh; }
+
+/* Attempts graphic */
+.attempts-graphic {
+  margin: 1.1rem 0 .8rem;
+  display: flex; flex-direction: column; gap: .45rem;
+  align-items: center; /* centre the rows */
+}
+.attempt-row {
+  display: flex; align-items: center; gap: 0;
+}
+.attempt-chip {
+  width: 26px; height: 26px; border-radius: 4px; flex-shrink: 0;
+  background: var(--tile-empty-bg); border: 1.5px solid var(--rule);
+}
+.attempt-dash {
+  width: 12px; height: 2px; background: var(--rule); flex-shrink: 0;
+}
+.attempt-group-gap { width: 14px; flex-shrink: 0; }
+.attempt-row-label {
+  font-family: var(--mono); font-size: .6rem; letter-spacing: .06em;
+  color: var(--muted); margin-left: .6rem; white-space: nowrap;
+}
+
+/* Hub reveals in completion modal — 2×2 grid */
+.reveal-grid { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .5rem; }
+.reveal-item {
+  display: flex; align-items: flex-start; gap: .6rem;
+  padding: .55rem .7rem; border-radius: 8px; background: var(--warm);
+  border: 1px solid var(--rule);
+}
+.reveal-swatch {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: .25rem;
+}
+.reveal-hub-word {
+  font-family: var(--mono); font-size: .78rem; font-weight: 500;
+  letter-spacing: .03em; text-transform: uppercase; color: var(--ink);
+  margin-bottom: .15rem;
+}
+.reveal-hub-words {
+  font-family: var(--mono); font-size: .65rem; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: .15rem;
+}
+.reveal-hub-desc {
+  font-size: .8rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.reveal-hub-desc ul {
+  margin: .25rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.reveal-hub-desc li {
+  margin: .25rem 0;
+  line-height: 1.45;
+}
+.analogy-note {
+  font-family: var(--sans); font-size: .68rem; letter-spacing: .04em;
+  color: var(--muted); margin-top: 1rem;
+  padding: .6rem .8rem; border-radius: 6px; background: var(--warm);
+  border: 1px solid var(--rule);
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { opacity: 0; animation: fadeUp .5s ease forwards; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+.shake { animation: shake .38s ease; }
+@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.025)} 100%{transform:scale(1)} }
+.pop { animation: pop .28s ease; }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="page-header fade-in">
+    <h1>Indirect Associations</h1>
+    <p class="subtitle" id="puzzleDateLabel">—</p>
+  </div>
+
+  <div class="attempts-bar fade-in" style="animation-delay:.15s">
+    <span>Attempts</span>
+    <div class="attempt-pips">
+      <div class="pip" id="pip0"></div><div class="pip" id="pip1"></div>
+      <div class="pip" id="pip2"></div><div class="pip" id="pip3"></div>
+      <div class="pip" id="pip4"></div><div class="pip" id="pip5"></div>
+    </div>
+    <span id="attemptsLeft">6 remaining</span>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="word-bank-section fade-in" style="animation-delay:.2s">
+    <div class="word-bank" id="wordBank"></div>
+  </div>
+
+  <div class="board-section fade-in" style="animation-delay:.25s">
+    <div class="board-card">
+    <div class="board" id="board">
+      <div class="analogy-line" id="line0">
+        <div class="hub-block" id="hubBlock0" data-pos="0"></div>
+        <div class="hub-connector" id="connector0">
+          <span class="is-to-label">is to</span>
+          <input class="connector-note" id="connNote0" type="text" placeholder="?" maxlength="80" />
+        </div>
+        <div class="hub-block" id="hubBlock1" data-pos="1"></div>
+      </div>
+      <div class="just-as-divider">…just as…</div>
+      <div class="analogy-line" id="line1">
+        <div class="hub-block" id="hubBlock2" data-pos="2"></div>
+        <div class="hub-connector" id="connector1">
+          <span class="is-to-label">is to</span>
+          <input class="connector-note" id="connNote1" type="text" placeholder="?" maxlength="80" />
+        </div>
+        <div class="hub-block" id="hubBlock3" data-pos="3"></div>
+      </div>
+    </div><!-- /board -->
+    </div><!-- /board-card -->
+  </div>
+
+  <div class="controls fade-in" style="animation-delay:.3s">
+    <button class="btn btn-filled" id="submitBtn">Submit</button>
+    <button class="btn" id="clearBtn">Clear board</button>
+  </div>
+
+  </div><!-- /page-wrap -->
+
+<!-- INSTRUCTIONS MODAL (shown on first load) -->
+<div class="modal-backdrop" id="instructionsModal">
+  <div class="modal">
+    <button class="modal-close" id="instructionsClose">✕</button>
+    <h2>Welcome to <u>Indirect Associations</u>! Here's how to play...</h2>
+    <p>This is a puzzle all about inference and analogy. Your goal is to find the analogy between four "hub" words: <strong>A is to B, just as C is to D</strong>. The only problem is that you don't know any of the words.</p>
+    <br>
+    <p>What you have access to are words related to the hub words:</p>
+    <p>For each hub word, you have <strong>two opposing words</strong>, which relate to the hub in opposite directions. For example, if the hub word is STATE, you may be looking for opposing words COUNTRY and CITY. They are all governmental territories, lying along the <i>size</i> axis: COUNTRY → STATE → CITY. The hub word lies in the middle of the extremes!</p>
+    <p>You also have access to <strong>one adjacent word</strong>, which is related to the hub in some way. For example, for the hub word STATE, an adjacent word could be PHASE, as in <i>state/phase of matter</i>.</p>
+    <p>Arrange the words into hub groups, then arrange those to take the form of the broader analogy!</p>
+    <br>
+    <p>You have <strong>6 total submissions</strong>! Any hub with all three slots filled can be submitted. Confirmed hubs lock into a coloured block you can drag around the board.</p>
+    <p><small>(There are some extra "?" fields in the center of each hub and each analogy where you can type! Use this to keep notes and keep track of your ideas. It has no effect on the puzzle!)</small></p>
+    <div class="modal-footer">
+      <button class="btn btn-filled" id="instructionsStart">Let's go</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL (shown on win or loss) -->
+<div class="modal-backdrop" id="completionModal" style="display:none">
+  <div class="modal modal-completion">
+    <h2 id="completionTitle"></h2>
+    <p id="completionMsg"></p>
+    <div class="attempts-graphic" id="attemptsGraphic"></div>
+    <div class="reveal-grid" id="revealGrid"></div>
+    <p class="analogy-note" id="analogyNote" style="display:none"></p>
+    <div class="modal-footer">
+      <button class="btn btn-filled" id="completionClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PUZZLE REGISTRY
+// Key = "YYYY-MM-DD". Add new puzzles here.
+// Each puzzle:
+//   hubs: 4 entries — id, hubWord, difficulty (1-4), opp1, opp2, adj, description
+//   pairs: two [id,id] arrays — which hubs share an analogy line
+//   analogyMode: "symmetric" | "directional"
+//   analogyDescription: shown on win
+// ═══════════════════════════════════════════════════════════════
+const PUZZLES = {
+  "2026-07-02": {
+    hubs: [
+      { id:"A", hubWord:"PAPER",  difficulty:4, opp1:"PAPYRUS",  opp2:"SCREEN",     adj:"TREE",
+      description: [
+        "PAPYRUS → PAPER → SCREEN: Methods of transmitting writing, ordered chronologically.",
+        "PAPER is made from TREES.",
+      ]},
+      { id:"B", hubWord:"BOOK",   difficulty:2, opp1:"POEM",     opp2:"SAGA",       adj:"FILM",
+      description: [
+        "POEM → BOOK → SAGA: Forms of the written word, ordered from shortest to longest.",
+        "BOOK and FILM are both forms of entertainment.",
+      ]},
+      { id:"C", hubWord:"CELL",   difficulty:1, opp1:"ORGANELLE", opp2:"ORGANISM", adj:"WARDEN",
+      description: [
+        "ORGANELLE → CELL → ORGANISM: Biological units used to construct the subsequent unit.",
+        "A WARDEN guards a CELL (as in prison).",
+      ]},
+      { id:"D", hubWord:"ANIMAL", difficulty:3, opp1:"PET",      opp2:"BEAST",        adj:"ZOO",
+      description: [
+        "PET → ANIMAL → BEAST: Ways of referring to animals, from least to most endearing.",
+        "An ANIMAL can be seen in the ZOO.",
+      ]}
+    ],
+    pairs: [["A","B"], ["C","D"]],
+    analogyMode: "directional",
+    analogyDescription: "PAPER is used in the construction of a BOOK, just as a CELL is used in the construction of an ANIMAL."
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// DATE & PUZZLE SELECTION
+// ═══════════════════════════════════════════════════════════════
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function getDateParam() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('d') || todayStr();
+}
+
+function formatDateDisplay(str) {
+  // "2026-07-02" → "July 2, 2026"
+  const [y,m,d] = str.split('-').map(Number);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${months[m-1]} ${d}, ${y}`;
+}
+
+// Set nav game link to today (no nav in standalone mode, but keep for potential future use)
+
+const puzzleDateStr = getDateParam();
+const PUZZLE = PUZZLES[puzzleDateStr];
+
+if (!PUZZLE) {
+  // No puzzle for this date — show a friendly message and stop
+  document.querySelector('.page-title h1').textContent = 'No puzzle today';
+  document.getElementById('puzzleDateLabel').textContent = formatDateDisplay(puzzleDateStr);
+  document.querySelector('.instructions').innerHTML = '<p>There is no puzzle available for this date. Check back soon, or <a href="indirect-associations.html">try today\'s puzzle</a>.</p>';
+  document.querySelector('.word-bank-section').style.display = 'none';
+  document.querySelector('.board-section').style.display = 'none';
+  document.querySelector('.controls').style.display = 'none';
+  // Stop script execution
+  throw new Error('No puzzle for date');
+}
+
+document.getElementById('puzzleDateLabel').textContent = formatDateDisplay(puzzleDateStr);
+
+// ═══════════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════════
+const MAX_ATTEMPTS = 6;
+let attemptsUsed = 0;
+let gameOver = false;
+
+// slotContents[pos][role] = word | null  (pos 0-3, role opp1/opp2/adj)
+const slotContents = {
+  0:{opp1:null,opp2:null,adj:null},
+  1:{opp1:null,opp2:null,adj:null},
+  2:{opp1:null,opp2:null,adj:null},
+  3:{opp1:null,opp2:null,adj:null}
+};
+
+// confirmedAt[pos] = difficulty (1-4) | null
+const confirmedAt = {0:null,1:null,2:null,3:null};
+// hubIdAt[pos] = puzzle hub id | null
+const hubIdAt = {0:null,1:null,2:null,3:null};
+// noteAt[pos] = string (user's note text at this hub node)
+const noteAt = {0:'',1:'',2:'',3:''};
+// connectorNoteAt[lineIdx] = string (user's note on the is-to connector)
+const connectorNoteAt = {0:'',1:''};
+// lineSolved[lineIndex] = true when that line's pair is confirmed correct
+const lineSolved = {0:false, 1:false};
+// In directional mode, records the direction (true=forward) of the first locked line
+let lockedLineForward = null;
+
+// attemptHistory: array of attempt records for the graphic
+// Each record: { hubs: [{difficulty, correct}], linesSolvedAfter: [bool,bool] }
+const attemptHistory = [];
+
+// drag state — tracked as simple objects, no inline opacity hacks
+let wordDrag  = null;  // {word, source:'bank'|'slot', pos?, role?}
+let blockDrag = null;  // board position (int) of confirmed block being dragged
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════════════
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('closing');
+  el.addEventListener('animationend', () => { el.style.display = 'none'; el.classList.remove('closing'); }, {once:true});
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('closing');
+  el.style.display = 'flex';
+  // Restart the fade-in animation by removing and re-adding the backdrop class
+  el.classList.remove('modal-backdrop');
+  void el.offsetWidth; // force reflow
+  el.classList.add('modal-backdrop');
+}
+
+const isLeft = pos => pos === 0 || pos === 2;
+const lineOf = pos => (pos === 0 || pos === 1) ? 0 : 1;
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderBlock(pos) {
+  const block  = document.getElementById(`hubBlock${pos}`);
+  const conf   = confirmedAt[pos] !== null;
+  const left   = isLeft(pos);
+
+  // Rebuild class list
+  const lineIdx = (pos === 0 || pos === 1) ? 0 : 1;
+  const lineLocked = lineSolved[lineIdx] === true;
+  block.className = 'hub-block' + (conf ? ` confirmed-${confirmedAt[pos]} locked` : '');
+  if (conf && lineLocked) block.classList.add('line-locked');
+  block.draggable = conf && !lineLocked;
+
+  const adjSlot  = makeSlotHTML(pos, 'adj',  conf);
+  const opp1Slot = makeSlotHTML(pos, 'opp1', conf);
+  const opp2Slot = makeSlotHTML(pos, 'opp2', conf);
+
+  // Hub centre: always a note input (styled differently when confirmed)
+  const centre = `<input class="hub-note" type="text" placeholder="?" maxlength="40"
+       data-pos="${pos}" value="${escHtml(noteAt[pos])}"
+       title="Your note — doesn't affect the puzzle" />`;
+
+  const vertCol = `<div class="vert-col">${opp1Slot}<div class="v-seg"></div>${centre}<div class="v-seg"></div>${opp2Slot}</div>`;
+  const hConn   = `<div class="h-conn"></div>`;
+
+  block.innerHTML = left
+    ? adjSlot + hConn + vertCol + hConn
+    : hConn + vertCol + hConn + adjSlot;
+
+  // Attach note input listeners
+  const inp = block.querySelector('.hub-note');
+  if (inp) {
+    inp.addEventListener('input', e => { noteAt[pos] = e.target.value; });
+    inp.addEventListener('mousedown', e => e.stopPropagation());
+    inp.addEventListener('dragstart', e => e.preventDefault());
+  }
+}
+
+function makeSlotHTML(pos, role, locked) {
+  const word   = slotContents[pos][role];
+  const labels = {opp1:'↑', opp2:'↓', adj:'adj'};
+  let inner;
+  if (!word) {
+    inner = `<span class="slot-label">${labels[role]}</span>`;
+  } else if (locked) {
+    // In a locked hub: not draggable, pointer-events:none
+    inner = `<div class="placed-word-locked">${escHtml(word)}</div>`;
+  } else {
+    inner = `<div class="placed-word" data-pos="${pos}" data-role="${role}" data-word="${escHtml(word)}" draggable="true">${escHtml(word)}</div>`;
+  }
+  return `<div class="word-slot" data-pos="${pos}" data-role="${role}">${inner}</div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderAllBlocks() {
+  for (let p = 0; p < 4; p++) renderBlock(p);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+function init() {
+  // Wire instruction modal
+  const closeInstructions = () => closeModal('instructionsModal');
+  document.getElementById('instructionsClose').addEventListener('click', closeInstructions);
+  document.getElementById('instructionsStart').addEventListener('click', closeInstructions);
+  // Close completion modal
+  document.getElementById('completionClose').addEventListener('click', () => closeModal('completionModal'));
+
+  buildWordBank();
+  renderAllBlocks();
+  setupDelegation();
+
+  // Wire connector note inputs
+  [0, 1].forEach(lineIdx => {
+    const inp = document.getElementById(`connNote${lineIdx}`);
+    if (!inp) return;
+    inp.addEventListener('input', e => { connectorNoteAt[lineIdx] = e.target.value; });
+    inp.addEventListener('mousedown', e => e.stopPropagation());
+    inp.addEventListener('dragstart', e => e.preventDefault());
+  });
+  document.getElementById('submitBtn').addEventListener('click', onSubmit);
+  document.getElementById('clearBtn').addEventListener('click', clearBoard);
+}
+
+function buildWordBank() {
+  const words = PUZZLE.hubs.flatMap(h => [h.opp1, h.opp2, h.adj]);
+  shuffle(words);
+  const bank = document.getElementById('wordBank');
+  words.forEach(w => {
+    const el = document.createElement('div');
+    el.className = 'word-token';
+    el.textContent = w;
+    el.draggable = true;
+    el.dataset.word = w;
+    bank.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT DELEGATION
+// ═══════════════════════════════════════════════════════════════
+function setupDelegation() {
+  const board = document.getElementById('board');
+  const bank  = document.getElementById('wordBank');
+
+  // ── dragstart ──
+  board.addEventListener('dragstart', e => {
+    if (gameOver) { e.preventDefault(); return; }
+    const pw    = e.target.closest('.placed-word');      // unlocked word
+    const block = e.target.closest('.hub-block.locked'); // confirmed block
+
+    if (pw) {
+      wordDrag = { word: pw.dataset.word, source:'slot', pos: parseInt(pw.dataset.pos), role: pw.dataset.role };
+      e.stopPropagation();
+    } else if (block) {
+      const pos = parseInt(block.dataset.pos);
+      const lineIdx = (pos === 0 || pos === 1) ? 0 : 1;
+      if (lineSolved[lineIdx] === true) return; // line is locked — no dragging
+      blockDrag = pos;
+    }
+  });
+
+  bank.addEventListener('dragstart', e => {
+    if (gameOver) { e.preventDefault(); return; }
+    const token = e.target.closest('.word-token:not(.placed)');
+    if (!token) return;
+    wordDrag = { word: token.dataset.word, source:'bank' };
+    token.classList.add('is-dragging');
+  });
+
+  // ── dragend ──
+  // Use CSS classes for visual feedback rather than inline opacity
+  // so cleanup is simple and reliable
+  board.addEventListener('dragend', () => {
+    board.querySelectorAll('.drag-over,.drag-over-block').forEach(el =>
+      el.classList.remove('drag-over','drag-over-block'));
+    wordDrag  = null;
+    blockDrag = null;
+  });
+
+  bank.addEventListener('dragend', e => {
+    const token = e.target.closest('.word-token');
+    if (token) token.classList.remove('is-dragging');
+    wordDrag = null;
+  });
+
+  // ── dragover ──
+  board.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (wordDrag) {
+      const slot = e.target.closest('.word-slot');
+      if (slot) slot.classList.add('drag-over');
+    } else if (blockDrag !== null) {
+      const block = e.target.closest('.hub-block');
+      const slot  = e.target.closest('.word-slot');
+      if (block && !slot) block.classList.add('drag-over-block');
+    }
+  });
+
+  board.addEventListener('dragleave', e => {
+    e.target.closest('.word-slot')?.classList.remove('drag-over');
+    e.target.closest('.hub-block')?.classList.remove('drag-over-block');
+  });
+
+  bank.addEventListener('dragover', e => e.preventDefault());
+
+  // ── drop on board ──
+  board.addEventListener('drop', e => {
+    e.preventDefault();
+    board.querySelectorAll('.drag-over,.drag-over-block').forEach(el =>
+      el.classList.remove('drag-over','drag-over-block'));
+
+    const slot  = e.target.closest('.word-slot');
+    const block = e.target.closest('.hub-block');
+
+    // Word → slot
+    if (wordDrag && slot) {
+      const destPos  = parseInt(slot.dataset.pos);
+      const destRole = slot.dataset.role;
+      if (confirmedAt[destPos] !== null) return; // locked
+
+      const displaced = slotContents[destPos][destRole];
+      slotContents[destPos][destRole] = wordDrag.word;
+
+      if (wordDrag.source === 'slot') {
+        slotContents[wordDrag.pos][wordDrag.role] = displaced || null;
+        renderBlock(wordDrag.pos);
+      } else {
+        markBankPlaced(wordDrag.word, true);
+        if (displaced) markBankPlaced(displaced, false);
+      }
+      renderBlock(destPos);
+      wordDrag = null;
+      return;
+    }
+
+    // Block → block
+    if (blockDrag !== null && block && !slot) {
+      const targetPos = parseInt(block.dataset.pos);
+      const srcLineIdx    = (blockDrag  === 0 || blockDrag  === 1) ? 0 : 1;
+      const targetLineIdx = (targetPos  === 0 || targetPos  === 1) ? 0 : 1;
+      // Refuse if either the source or target line is already solved
+      if (lineSolved[srcLineIdx] !== true && lineSolved[targetLineIdx] !== true) {
+        if (targetPos !== blockDrag) swapBlocks(blockDrag, targetPos);
+      }
+      blockDrag = null;
+      return;
+    }
+  });
+
+  // ── drop on bank (return word) ──
+  bank.addEventListener('drop', e => {
+    e.preventDefault();
+    if (!wordDrag || wordDrag.source !== 'slot') return;
+    slotContents[wordDrag.pos][wordDrag.role] = null;
+    renderBlock(wordDrag.pos);
+    markBankPlaced(wordDrag.word, false);
+    wordDrag = null;
+  });
+
+  // ── click slot → return to bank ──
+  board.addEventListener('click', e => {
+    if (gameOver) return;
+    const slot = e.target.closest('.word-slot');
+    if (!slot) return;
+    const pos  = parseInt(slot.dataset.pos);
+    const role = slot.dataset.role;
+    if (confirmedAt[pos] !== null) return; // locked
+    const word = slotContents[pos][role];
+    if (!word) return;
+    slotContents[pos][role] = null;
+    renderBlock(pos);
+    markBankPlaced(word, false);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BANK HELPERS
+// ═══════════════════════════════════════════════════════════════
+function markBankPlaced(word, placed) {
+  const t = document.querySelector(`#wordBank [data-word="${word}"]`);
+  if (t) t.classList.toggle('placed', placed);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BLOCK SWAP — pure state swap + re-render (no DOM node moving)
+// ═══════════════════════════════════════════════════════════════
+function swapBlocks(posA, posB) {
+  [confirmedAt[posA], confirmedAt[posB]] = [confirmedAt[posB], confirmedAt[posA]];
+  [hubIdAt[posA],     hubIdAt[posB]]     = [hubIdAt[posB],     hubIdAt[posA]];
+  [slotContents[posA],slotContents[posB]]= [slotContents[posB],slotContents[posA]];
+  [noteAt[posA],      noteAt[posB]]      = [noteAt[posB],      noteAt[posA]];
+  renderBlock(posA);
+  renderBlock(posB);
+}
+
+// Snapshot of board state at last submission — used to detect no-change submits
+let lastSubmittedSnapshot = null;
+
+function boardSnapshot() {
+  // Capture everything that could affect the outcome:
+  // slot contents for unconfirmed positions + which hub is at each confirmed position
+  return JSON.stringify({
+    slots: [0,1,2,3].map(p => confirmedAt[p] !== null ? `locked:${hubIdAt[p]}` : slotContents[p]),
+    lineSolved: {...lineSolved}
+  });
+}
+//
+// Directional logic:
+//   The first correct line locks immediately and sets a direction reference.
+//   "Forward" on a line means: left hub = pairs[n][0], right hub = pairs[n][1].
+//   The second line is correct only if it runs in the SAME direction as the first.
+//   Symmetric mode: direction never matters, lines lock independently.
+// ═══════════════════════════════════════════════════════════════
+function checkBothLines() {
+  let anyNewlySolved = false;
+
+  [0, 1].forEach(lineIdx => {
+    if (lineSolved[lineIdx] === true) return; // already locked
+
+    const posL = lineIdx === 0 ? 0 : 2;
+    const posR = lineIdx === 0 ? 1 : 3;
+    if (hubIdAt[posL] === null || hubIdAt[posR] === null) return;
+
+    // Check pairing: do these two hubs form one of the correct pairs?
+    const lineSet = new Set([hubIdAt[posL], hubIdAt[posR]]);
+    const p0 = new Set(PUZZLE.pairs[0]);
+    const p1 = new Set(PUZZLE.pairs[1]);
+    if (!setsEqual(lineSet, p0) && !setsEqual(lineSet, p1)) return;
+
+    // Which puzzle pair is this line matching?
+    const correctPair = setsEqual(lineSet, p0) ? PUZZLE.pairs[0] : PUZZLE.pairs[1];
+    // Is this line "forward" (left = correctPair[0]) or "reversed"?
+    const thisForward = hubIdAt[posL] === correctPair[0];
+
+    if (PUZZLE.analogyMode === 'directional') {
+      // Find the other line index
+      const otherIdx = lineIdx === 0 ? 1 : 0;
+
+      if (lineSolved[otherIdx] === true) {
+        // Other line is already locked — check our direction matches it
+        if (thisForward !== lockedLineForward) return; // wrong direction, don't lock
+      } else {
+        // We're the first line to be confirmed — lock and record our direction
+        lockedLineForward = thisForward;
+      }
+    }
+
+    // Lock this line
+    lineSolved[lineIdx] = true;
+    anyNewlySolved = true;
+    document.getElementById(`line${lineIdx}`).classList.add('line-solved');
+    renderBlock(posL);
+    renderBlock(posR);
+  });
+
+  if (lineSolved[0] === true && lineSolved[1] === true) {
+    endGame(true);
+    return;
+  }
+
+  if (anyNewlySolved) {
+    showFeedback("One pair confirmed! Find the second.", 'correct');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUBMISSION
+// ═══════════════════════════════════════════════════════════════
+function onSubmit() {
+  if (gameOver) return;
+
+  // Collect unconfirmed positions that are fully filled
+  const toCheck = [];
+  for (let p = 0; p < 4; p++) {
+    if (confirmedAt[p] !== null) continue;
+    const s = slotContents[p];
+    if (s.opp1 && s.opp2 && s.adj) toCheck.push(p);
+  }
+
+  // If there's nothing new to verify hub-wise, we can still check
+  // goal 2 if confirmed hubs are already in position on both lines
+  const line0ready = hubIdAt[0] !== null && hubIdAt[1] !== null;
+  const line1ready = hubIdAt[2] !== null && hubIdAt[3] !== null;
+  const canCheckLines = (line0ready || line1ready) &&
+    (lineSolved[0] !== true || lineSolved[1] !== true);
+
+  if (!toCheck.length && !canCheckLines) {
+    showFeedback("Fill at least one hub completely before submitting.", '');
+    return;
+  }
+
+  // Don't spend an attempt if nothing has changed since the last submission
+  const snap = boardSnapshot();
+  if (snap === lastSubmittedSnapshot) {
+    showFeedback("Nothing has changed since your last submission.", '');
+    return;
+  }
+
+  attemptsUsed++;
+  updatePips();
+
+  const correct = [], wrong = [];
+  toCheck.forEach(pos => {
+    const s = slotContents[pos];
+    const match = PUZZLE.hubs.find(h => {
+      if (s.adj !== h.adj) return false;
+      const placedOpps = new Set([s.opp1, s.opp2]);
+      const hubOpps    = new Set([h.opp1, h.opp2]);
+      return setsEqual(placedOpps, hubOpps);
+    });
+    if (match) correct.push({pos, hub:match});
+    else       wrong.push(pos);
+  });
+
+  correct.forEach(({pos, hub}) => {
+    confirmedAt[pos] = hub.difficulty;
+    hubIdAt[pos]     = hub.id;
+    renderBlock(pos);
+    const block = document.getElementById(`hubBlock${pos}`);
+    block.classList.add('pop');
+    setTimeout(() => block.classList.remove('pop'), 400);
+  });
+
+  // Update snapshot AFTER locking newly confirmed hubs, so next submit
+  // with the same board arrangement won't cost another attempt
+  lastSubmittedSnapshot = boardSnapshot();
+
+  // Record this attempt for the graphic
+  // Snapshot: difficulty at each position (null = unconfirmed)
+  attemptHistory.push([0,1,2,3].map(p => confirmedAt[p]));
+
+  if (toCheck.length) {
+    if (!wrong.length && correct.length) {
+      showFeedback(`${correct.length} hub${correct.length>1?'s':''} confirmed.`, 'correct');
+    } else if (correct.length) {
+      showFeedback(`${correct.length} correct, ${wrong.length} incorrect.`, '');
+      shakeBlocks(wrong);
+    } else {
+      showFeedback("No submitted hubs were correct.", 'incorrect');
+      shakeBlocks(wrong);
+    }
+  }
+
+  // Always check goal 2 after a submission
+  const nowLine0ready = hubIdAt[0] !== null && hubIdAt[1] !== null;
+  const nowLine1ready = hubIdAt[2] !== null && hubIdAt[3] !== null;
+  if ((nowLine0ready || nowLine1ready) && !gameOver) checkBothLines();
+
+  // Check loss condition
+  if (!gameOver && attemptsUsed >= MAX_ATTEMPTS) endGame(false);
+}
+
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+function shakeBlocks(positions) {
+  positions.forEach(pos => {
+    const b = document.getElementById(`hubBlock${pos}`);
+    if (!b) return;
+    b.classList.remove('shake'); void b.offsetWidth;
+    b.classList.add('shake');
+    setTimeout(() => b.classList.remove('shake'), 500);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLEAR
+// ═══════════════════════════════════════════════════════════════
+function clearBoard() {
+  if (gameOver) return;
+  for (let p = 0; p < 4; p++) {
+    if (confirmedAt[p] !== null) continue;
+    ['opp1','opp2','adj'].forEach(role => {
+      const w = slotContents[p][role];
+      if (w) { slotContents[p][role] = null; markBankPlaced(w, false); }
+    });
+    renderBlock(p);
+  }
+  showFeedback('', '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════════
+function updatePips() {
+  for (let i=0;i<MAX_ATTEMPTS;i++)
+    document.getElementById(`pip${i}`).classList.toggle('used', i<attemptsUsed);
+  document.getElementById('attemptsLeft').textContent = (MAX_ATTEMPTS-attemptsUsed)+' remaining';
+}
+
+function showFeedback(msg, type) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg; el.className = 'feedback '+type;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// END GAME
+// ═══════════════════════════════════════════════════════════════
+function endGame(won) {
+  gameOver = true;
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('clearBtn').disabled  = true;
+
+  if (won) {
+    showFeedback('Both goals complete.', 'correct');
+  } else {
+    showFeedback('No attempts remaining.', 'incorrect');
+  }
+
+  // Build completion modal content
+  document.getElementById('completionTitle').textContent = won
+    ? `Congratulations! ${getGrade()}`
+    : 'Out of attempts.';
+  document.getElementById('completionMsg').textContent = won
+    ? `Completed in ${attemptsUsed} attempt${attemptsUsed!==1?'s':''} of 6.`
+    : `Better luck next time.`;
+
+  // Attempts graphic — each attempt shown as a mini board snapshot:
+  //   [pos0]─[pos1]   [pos2]─[pos3]
+  // Colours match hub difficulty; gray = not yet confirmed at that snapshot
+  const hubBg = {
+    1:'var(--hub-1)', 2:'var(--hub-2)', 3:'var(--hub-3)', 4:'var(--hub-4)'
+  };
+  const hubBd = {
+    1:'var(--hub-1)', 2:'var(--hub-2)', 3:'var(--hub-3)', 4:'var(--hub-4)'
+  };
+
+  const graphic = document.getElementById('attemptsGraphic');
+  graphic.innerHTML = '';
+
+  attemptHistory.forEach((snap, i) => {
+    // snap is [diff0, diff1, diff2, diff3] — difficulty or null per position
+    const row = document.createElement('div');
+    row.className = 'attempt-row';
+
+    // Label
+    const lbl = document.createElement('span');
+    lbl.className = 'attempt-row-label';
+    lbl.textContent = ``;
+    row.appendChild(lbl);
+
+    // Line 0: pos 0 ─ pos 1
+    const chip0 = makeChip(snap[0], hubBg, hubBd);
+    const dash0 = makeDash();
+    const chip1 = makeChip(snap[1], hubBg, hubBd);
+
+    // gap between the two line groups
+    const gap = document.createElement('div');
+    gap.className = 'attempt-group-gap';
+
+    // Line 1: pos 2 ─ pos 3
+    const chip2 = makeChip(snap[2], hubBg, hubBd);
+    const dash1 = makeDash();
+    const chip3 = makeChip(snap[3], hubBg, hubBd);
+
+    row.appendChild(chip0);
+    row.appendChild(dash0);
+    row.appendChild(chip1);
+    row.appendChild(gap);
+    row.appendChild(chip2);
+    row.appendChild(dash1);
+    row.appendChild(chip3);
+
+    graphic.appendChild(row);
+  });
+
+  // Hub reveals
+  const colors = {1:'var(--hub-1)',2:'var(--hub-2)',3:'var(--hub-3)',4:'var(--hub-4)'};
+  const grid = document.getElementById('revealGrid');
+  grid.innerHTML = '';
+  PUZZLE.hubs.forEach(hub => {
+    const item = document.createElement('div');
+    item.className = 'reveal-item';
+    item.innerHTML = `
+      <div class="reveal-swatch" style="background:${colors[hub.difficulty]}"></div>
+      <div>
+        <div class="reveal-hub-word">${hub.hubWord}</div>
+        <div class="reveal-hub-desc">
+          <ul>
+            ${hub.description.map(point => `<li>${point}</li>`).join('')}
+          </ul>
+        </div>
+      </div>`;
+    grid.appendChild(item);
+  });
+
+  if (PUZZLE.analogyDescription) {
+    const note = document.getElementById('analogyNote');
+    note.textContent = PUZZLE.analogyDescription;
+    note.style.display = '';
+  }
+
+  // Small delay so the board's pop animation finishes first
+  setTimeout(() => openModal('completionModal'), won ? 600 : 200);
+}
+
+function makeChip(difficulty, hubBg, hubBd) {
+  const chip = document.createElement('div');
+  chip.className = 'attempt-chip';
+  if (difficulty) {
+    chip.style.background  = hubBg[difficulty];
+    chip.style.borderColor = hubBd[difficulty];
+  }
+  return chip;
+}
+
+function makeDash() {
+  const d = document.createElement('div');
+  d.className = 'attempt-dash';
+  return d;
+}
+
+function getGrade() {
+  return ['','Perfect.','Excellent.','Great.','Good.','Solved.'][Math.min(attemptsUsed,5)] || 'Solved.';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+
+init();
+</script>
+</body>
+</html>
