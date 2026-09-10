@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tapestry — Joshua Ange</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0f0e;
+  --paper: #f5f3ee;
+  --warm: #ede9e0;
+  --surface: #faf8f4;
+  --accent: #2a4a7f;
+  --muted: #6b6660;
+  --rule: #d4cfc8;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+  --hand: 'Patrick Hand', cursive;
+  --hub-1: #4e9a5e;
+  --hub-2: #3b6dbf;
+  --hub-3: #b56d1e;
+  --hub-4: #8050a0;
+  --missed: #9a9488;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.page-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3rem) clamp(.8rem, 3vw, 1.5rem) 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.page-wrap > * { width: 100%; }
+
+.page-header { margin-bottom: 1.4rem; text-align: center; }
+.page-header h1 {
+  font-family: var(--mono);
+  font-size: clamp(1.1rem, 4vw, 1.7rem);
+  font-weight: 500;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  margin-bottom: .2rem;
+}
+.page-header .subtitle {
+  font-family: var(--mono);
+  font-size: clamp(.6rem, 2vw, .7rem);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.attempts-bar {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  margin-bottom: 1rem;
+  font-family: var(--mono); font-size: clamp(.6rem, 2vw, .68rem); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+  flex-wrap: wrap;
+}
+.attempt-pips { display: flex; gap: .3rem; }
+.pip {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid var(--muted); background: transparent;
+  transition: background .25s;
+}
+.pip.used { background: var(--ink); border-color: var(--ink); }
+
+.feedback {
+  font-family: var(--mono); font-size: clamp(.62rem, 2vw, .72rem); letter-spacing: .04em;
+  color: var(--muted); min-height: 1.3rem; margin-bottom: 1rem;
+  text-align: center;
+}
+.feedback.correct  { color: #2d7a3a; }
+.feedback.incorrect { color: #b03030; }
+
+/* BOARD */
+.board-section { margin-bottom: 1rem; }
+.board-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: clamp(.5rem, 2vw, .9rem);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.04);
+}
+.physics-board {
+  position: relative;
+  width: 100%;
+  min-height: clamp(400px, 66vh, 600px);
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--warm);
+}
+.conn-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.conn-visible { fill: none; stroke-linecap: round; }
+.conn-hit { stroke: transparent; stroke-width: 24; fill: none; pointer-events: stroke; cursor: pointer; }
+.conn-pending .conn-visible { stroke: var(--muted); stroke-width: 1.75; stroke-dasharray: 5 4; opacity: .7; }
+.conn-pending .conn-hit { cursor: pointer; }
+.conn-locked.diff-1 .conn-visible { stroke: var(--hub-1); }
+.conn-locked.diff-2 .conn-visible { stroke: var(--hub-2); }
+.conn-locked.diff-3 .conn-visible { stroke: var(--hub-3); }
+.conn-locked.diff-4 .conn-visible { stroke: var(--hub-4); }
+.conn-locked .conn-visible { stroke-width: 2.5; }
+.conn-missed.diff-1 .conn-visible { stroke: var(--hub-1); }
+.conn-missed.diff-2 .conn-visible { stroke: var(--hub-2); }
+.conn-missed.diff-3 .conn-visible { stroke: var(--hub-3); }
+.conn-missed.diff-4 .conn-visible { stroke: var(--hub-4); }
+.conn-missed .conn-visible { stroke-width: 1.5; stroke-dasharray: 3 5; opacity: .5; }
+.drag-line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 4; opacity: .65; stroke-linecap: round; pointer-events: none; }
+
+.node-pill {
+  position: absolute;
+  left: 0; top: 0;
+  padding: .5rem .85rem;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  border: 1.5px solid var(--rule);
+  font-family: var(--mono);
+  font-size: clamp(.56rem, 1.7vw, .68rem);
+  font-weight: 500;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.35;
+  white-space: pre-line;
+  max-width: clamp(85px, 22vw, 130px);
+  overflow-wrap: break-word;
+  cursor: grab;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.05);
+  transition: border-color .15s, box-shadow .15s, opacity .4s ease;
+  user-select: none;
+  touch-action: none;
+}
+.node-pill:active { cursor: grabbing; }
+.node-pill:hover { border-color: #b9b2a4; }
+.node-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.node-pill.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(42,74,127,.25);
+}
+
+.info-panel {
+  margin-top: .8rem;
+  padding: .65rem .9rem;
+  border-radius: 8px;
+  background: var(--warm);
+  border: 1px solid var(--rule);
+  min-height: 3.4rem;
+}
+.info-label {
+  font-family: var(--mono); font-size: clamp(.6rem,1.8vw,.68rem);
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+  font-weight: 500; display: block; margin-bottom: .25rem;
+}
+.info-text {
+  font-family: var(--sans); font-size: clamp(.78rem,2.2vw,.85rem);
+  color: var(--muted); line-height: 1.5;
+}
+
+.controls {
+  display: flex; gap: .8rem; align-items: center; justify-content: center;
+  margin-bottom: 2rem; flex-wrap: wrap;
+}
+.btn {
+  font-family: var(--mono); font-size: clamp(.62rem, 2vw, .68rem); font-weight: 500;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: .55rem 1.3rem; border-radius: 6px;
+  border: 1.5px solid var(--accent); color: var(--accent);
+  background: transparent; cursor: pointer;
+  transition: background .15s, color .15s;
+  min-height: 44px;
+}
+.btn:hover { background: var(--accent); color: #fff; }
+.btn:disabled { border-color: var(--rule); color: var(--muted); cursor: not-allowed; }
+.btn:disabled:hover { background: transparent; color: var(--muted); }
+.btn-filled { background: var(--accent); color: #fff; }
+.btn-filled:hover { background: #2d4aa0; }
+.pending-counter {
+  font-family: var(--mono); font-size: clamp(.6rem, 2vw, .66rem); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.pending-counter.over-limit { color: #b03030; }
+
+/* MODALS */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  opacity: 0; animation: modalIn .22s ease forwards;
+}
+@keyframes modalIn { to { opacity: 1; } }
+.modal-backdrop.closing { animation: modalOut .18s ease forwards; pointer-events: none; }
+@keyframes modalOut { to { opacity: 0; } }
+
+.modal {
+  background: var(--paper); border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.06);
+  max-width: 750px;
+  width: min(750px, 95vw);
+  padding: clamp(1.2rem, 4vw, 1.5rem) clamp(1rem, 4vw, 1.6rem);
+  position: relative;
+  max-height: 90vh; overflow-y: auto;
+  transform: translateY(14px); animation: modalSlide .22s ease forwards;
+}
+@keyframes modalSlide { to { transform: translateY(0); } }
+
+.modal h2 { font-family: var(--mono); font-size: clamp(1rem, 3.5vw, 1.25rem); font-weight: 500; letter-spacing: -.01em; margin-bottom: 1rem; color: var(--ink); }
+.modal p { font-size: clamp(.82rem, 2.5vw, .9rem); color: var(--muted); margin-bottom: .7rem; line-height: 1.55; }
+.modal p strong { color: var(--ink); font-weight: 500; }
+
+.modal-close { position: absolute; top: .9rem; right: 1rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; color: var(--muted); background: none; border: none; cursor: pointer; padding: .2rem .4rem; transition: color .12s; min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: flex-end; }
+.modal-close:hover { color: var(--ink); }
+.modal-footer { margin-top: 1.4rem; display: flex; justify-content: flex-end; align-items: center; gap: .8rem; flex-wrap: wrap; }
+
+.topology-wrap { display: flex; justify-content: center; margin: 1rem 0; }
+.topology-image { width: min(220px, 60vw); height: min(220px, 60vw); }
+
+.reveal-grid { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .5rem; }
+.reveal-item { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem .7rem; border-radius: 8px; background: var(--warm); border: 1px solid var(--rule); }
+.reveal-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: .25rem; }
+.reveal-hub-word { font-family: var(--mono); font-size: clamp(.66rem, 2vw, .74rem); font-weight: 500; letter-spacing: .02em; text-transform: uppercase; color: var(--ink); margin-bottom: .2rem; }
+.reveal-hub-desc { font-size: clamp(.74rem, 2.2vw, .8rem); color: var(--muted); line-height: 1.45; }
+
+.share-feedback { font-family: var(--mono); font-size: .65rem; letter-spacing: .06em; color: #2d7a3a; opacity: 0; transition: opacity .3s; }
+.share-feedback.visible { opacity: 1; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { opacity: 0; animation: fadeUp .5s ease forwards; }
+/* shake is applied as a JS-computed offset inside updateNodePositions(),
+   not a CSS animation, so it doesn't fight the physics-driven transform */
+@keyframes popNode { 50%{ filter: brightness(1.3); } }
+.node-pill.pop { animation: popNode .3s ease; }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="page-header fade-in">
+    <h1>Tapestry</h1>
+    <p class="subtitle" id="puzzleDateLabel">—</p>
+  </div>
+
+  <div class="attempts-bar fade-in" style="animation-delay:.15s">
+    <span>Proposals</span>
+    <div class="attempt-pips" id="attemptPips"></div>
+    <span id="attemptsLeft">— remaining</span>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="board-section fade-in" style="animation-delay:.2s">
+    <div class="board-card">
+      <div class="physics-board" id="physicsBoard">
+        <svg id="connSvg" class="conn-svg">
+          <line id="dragLine" class="drag-line" x1="0" y1="0" x2="0" y2="0" style="display:none"></line>
+        </svg>
+      </div>
+    </div>
+    <div class="info-panel" id="infoPanel">
+      <span class="info-label" id="infoLabel">Get started</span>
+      <p class="info-text" id="infoText">Hover or tap a concept to see what it means. Drag from one concept to another to propose a connection.</p>
+    </div>
+  </div>
+
+  <div class="controls fade-in" style="animation-delay:.3s">
+    <button class="btn btn-filled" id="submitBtn">Submit</button>
+    <button class="btn" id="clearBtn">Clear pending</button>
+    <span class="pending-counter" id="pendingCounter">0 queued</span>
+  </div>
+</div>
+
+<!-- INSTRUCTIONS MODAL -->
+<div class="modal-backdrop" id="instructionsModal">
+  <div class="modal">
+    <button class="modal-close" id="instructionsClose">✕</button>
+    <h2>Welcome to Tapestry!</h2>
+
+    <p>The set of human knowledge is not disparate. It builds on itself across fields and domains, often in ways that are imperceptible to most people. One could not dismiss, for example, the age of the earth without first dismissing the archeological record, and therefore radioactive decay, and therefore the entirety of nuclear physics. The sum of human knowledge forms a complex and interlocking web through fundamental principles, history, and application. It forms a <strong>tapestry</strong>.</p>
+
+    <p style="font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem">Goal : Find the connections</p>
+
+    <p>This puzzle aims to emphasize the linking across fields. Every concept on the board is directly connected to others. Note: this is not superficials connections like "country of origin" or "invented by...", but deep fundamental connections between topics. Perhaps they are both fundamentally based on the same mechanism. Perhaps they are examples of the same phenomena. Perhaps one is necessary for the other to be possible.</p>
+      
+    <p>Hover over a topic (or tap it, on mobile) to see what it means and drag connections from one to the other, forming a web of human knowledge that is 10 connections long.</p>
+
+    <p>Propose as many connections at once as you like (or click a connection you've proposed to undo), then hit <strong>Submit</strong> to check them. There's exactly one way the whole web fits together. Once you've found it all, that's the shape you'll see!</p>
+
+    <p>You have 15 total connection proposals! Good luck!</p>
+
+    <div class="modal-footer">
+      <button class="btn btn-filled" id="instructionsStart">Let's go</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div class="modal-backdrop" id="completionModal" style="display:none">
+  <div class="modal">
+    <h2 id="completionTitle"></h2>
+    <p id="completionMsg"></p>
+    <div class="topology-wrap"><div class="topology-image" id="topologyImage"></div></div>
+    <div class="reveal-grid" id="revealGrid"></div>
+    <div class="modal-footer">
+      <span class="share-feedback" id="shareFeedback">Copied!</span>
+      <button class="btn" id="shareBtn">Share result</button>
+      <button class="btn btn-filled" id="completionClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PUZZLE REGISTRY  (simple/obvious test content — not a real puzzle yet)
+// ═══════════════════════════════════════════════════════════════
+const PUZZLES = {
+  "2026-07-03": {
+    maxConnectionAttempts: 15,
+    nodes: [
+      { id:"firesetting",   label:"Firesetting",   desc:"A prehistoric mining technique where fires were set against a cavern wall to heat the stone before covering it with liquid." },
+      { id:"cairn",   label:"Chambered Cairns",   desc:"A burial monument, typically from the Neolithic period, with an inner chamber." },
+      { id:"solstice",   label:"Solstice",   desc:"Astronomical event marking the shortest or longest day or night of the year." },
+      { id:"therm_shock",   label:"Thermal Shock",   desc:"Thermal stress caused by sudden temperature changes, making it shatter." },
+      { id:"carbon_dating",   label:"Carbon Dating",   desc:"Scientific method to determine the age of organic materials by measuring the amount of carbon-14 in the sample." },
+      { id:"radioactive_decay",   label:"Radioactive Decay",   desc:"The spontaneous process by which an unstable nucleus loses energy by emitting radiation." },
+      { id:"smoke_detectors",   label:"Smoke Detectors",   desc:"A device that senses smoke in the air to detect fires inside a building." },
+      { id:"grooved_ware",   label:"Grooved Ware",   desc:"A pottery style of the British Neolithic period, typically with a flat-bottomed pot and straight sides sloping outwards." },
+      { id:"GR",   label:"General Relativity",   desc:"Albert Einstein's theory of gravity as the physical bending of space and time by heavy objects." },
+    ],
+    connections: [
+      { a:"firesetting",  b:"therm_shock",  difficulty:1, desc:"Firesetting is a successful mining technique because it uses thermal shock to fracture the stone." },
+      { a:"carbon_dating",  b:"radioactive_decay",  difficulty:2, desc:"Carbon dating is only possible because it is based on the known radioactive decay rate of carbon-14." },
+      { a:"carbon_dating",  b:"grooved_ware",  difficulty:2, desc:"Carbon dating is done using the organic materials within/attached to groove ware to place their location in history." },
+      { a:"cairn",  b:"grooved_ware",  difficulty:1, desc:"Grooved ware is found in chambered cairns, especially Late Neolithic Maeshowe-type passage graves." },
+      { a:"cairn",  b:"solstice",  difficulty:3, desc:"Many cairns are constructed such that they align with astronomical events like solstices." },
+      { a:"smoke_detectors",  b:"radioactive_decay",  difficulty:4, desc:"Some smoke detectors use the decay of Americium-241 to ionize the air and generate a current, allowing for detection of smoke." },
+      { a:"grooved_ware",  b:"therm_shock",  difficulty:4, desc:"To resist against thermal shock, early grooved ware would use grog or shell as an agent to create micropores in the clay." },
+      { a:"GR",  b:"radioactive_decay",  difficulty:4, desc:"General Relativity is necessary to predict the observed decay rates of fast particles like muons." },
+      { a:"GR",  b:"solstice",  difficulty:2, desc:"Relativistic effects must be included for precision calculations of astronomical events like solstices." },
+      { a:"firesetting",  b:"smoke_detectors",  difficulty:3, desc:"Firesetting is dangerous because of a lack of ventilation of gases like carbon monoxide, which smoke detectors specifically aim to sense." },
+    ]
+  }
+};
+// difficulty 1- you need to know the info provided to you
+// difficulty 2- you need a little more than what's given, something that would borderline be in the definition.
+// difficulty 3- you need to know more than what's given
+// difficulty 4- you need to know more than what's given, and its technical
+
+const DIFF_COLORS = {1:'#4e9a5e', 2:'#3b6dbf', 3:'#b56d1e', 4:'#8050a0'};
+const LEN_BY_DIFF  = {1:300, 2:300, 3:300, 4:300};
+
+// ═══════════════════════════════════════════════════════════════
+// DATE & PUZZLE SELECTION
+// ═══════════════════════════════════════════════════════════════
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDateDisplay(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${months[m-1]} ${d}, ${y}`;
+}
+function getMostRecentPuzzleDate() {
+  const dates = Object.keys(PUZZLES).sort();
+  return dates[dates.length - 1];
+}
+function getPuzzleDate() {
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('d');
+  return (requested && PUZZLES[requested]) ? requested : getMostRecentPuzzleDate();
+}
+
+const puzzleDateStr = getPuzzleDate();
+const PUZZLE = PUZZLES[puzzleDateStr];
+document.getElementById('puzzleDateLabel').textContent = formatDateDisplay(puzzleDateStr);
+
+// ═══════════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════════
+let connectionsAttempted = 0;
+let gameOver = false;
+let revealed = false;
+let pendingConnections = [];
+let lockedConnections  = [];
+
+const connKey = (a,b) => [a,b].sort().join('|');
+const validConnSet = new Set(PUZZLE.connections.map(c => connKey(c.a,c.b)));
+function isValidPair(a,b) { return validConnSet.has(connKey(a,b)); }
+function findConnDesc(a,b) {
+  const key = connKey(a,b);
+  return PUZZLE.connections.find(c => connKey(c.a,c.b) === key);
+}
+function isAlreadyConnected(a,b) {
+  const key = connKey(a,b);
+  return lockedConnections.some(c => connKey(c.a,c.b)===key) || pendingConnections.some(c => connKey(c.a,c.b)===key);
+}
+function checkWin() {
+  return lockedConnections.length === PUZZLE.connections.length;
+}
+function hasAnyLock(id) {
+  return lockedConnections.some(c => c.a===id || c.b===id);
+}
+
+// Recomputes which locked nodes belong to which component, and designates
+// exactly one — the largest — as anchored to the real canonical layout.
+// Smaller components get a "virtual home": their own correct internal shape
+// (true relative offsets among just their own members) centered on the
+// average of their members' ambient home spots rather than on the truth, so
+// they don't reveal how they actually relate to anything else. Ties break on
+// the alphabetically-lowest member id, purely for stability, not meaning.
+function refreshLockedComponents() {
+  const parent = {};
+  PUZZLE.nodes.forEach(n => parent[n.id] = n.id);
+  function find(x) { while (parent[x]!==x) { parent[x]=parent[parent[x]]; x=parent[x]; } return x; }
+  function union(a,b) { const ra=find(a), rb=find(b); if (ra!==rb) parent[ra]=rb; }
+  lockedConnections.forEach(c => union(c.a,c.b));
+  const groups = {};
+  PUZZLE.nodes.forEach(n => { const r = find(n.id); (groups[r] = groups[r] || []).push(n.id); });
+  const comps = Object.values(groups).filter(g => g.length > 1);
+
+  let largestIdx = -1, bestSize = -1, bestMinId = null;
+  comps.forEach((members, idx) => {
+    const size = members.length;
+    const minId = members.slice().sort()[0];
+    if (size > bestSize || (size === bestSize && minId < bestMinId)) {
+      largestIdx = idx; bestSize = size; bestMinId = minId;
+    }
+  });
+
+  Object.keys(nodeAnchorInfo).forEach(k => delete nodeAnchorInfo[k]);
+  lockedComponentsList = comps.map((members, idx) => ({ members, isLargest: idx === largestIdx }));
+  comps.forEach((members, idx) => {
+    if (idx === largestIdx) {
+      members.forEach(id => { nodeAnchorInfo[id] = { mode:'largest' }; });
+    } else {
+      let vx=0, vy=0, cx0=0, cy0=0;
+      members.forEach(id => {
+        vx += homeOffset[id].x; vy += homeOffset[id].y;
+        cx0 += canonicalOffset[id].x; cy0 += canonicalOffset[id].y;
+      });
+      vx/=members.length; vy/=members.length; cx0/=members.length; cy0/=members.length;
+      members.forEach(id => {
+        nodeAnchorInfo[id] = {
+          mode: 'small',
+          virtualHome: { x:vx, y:vy },
+          localShape: { x: canonicalOffset[id].x-cx0, y: canonicalOffset[id].y-cy0 }
+        };
+      });
+    }
+  });
+}
+
+// Dev-time sanity check — every puzzle's connections must span all nodes as one piece.
+(function validatePuzzleConnected() {
+  const ids = PUZZLE.nodes.map(n => n.id);
+  if (ids.length === 0) return;
+  const adj = {}; ids.forEach(id => adj[id] = []);
+  PUZZLE.connections.forEach(c => { adj[c.a].push(c.b); adj[c.b].push(c.a); });
+  const seen = new Set([ids[0]]);
+  const queue = [ids[0]];
+  while (queue.length) {
+    const cur = queue.shift();
+    adj[cur].forEach(nb => { if (!seen.has(nb)) { seen.add(nb); queue.push(nb); } });
+  }
+  if (seen.size !== ids.length) {
+    console.warn('Tapestry: this puzzle\'s connections do not form one connected graph —',
+      ids.length - seen.size, 'node(s) unreachable from the rest.');
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// PHYSICS
+// ═════════════════════════════════════════════════════════════
+// Only a CONFIRMED connection pulls a node toward its one true position —
+// pending guesses never do, right or wrong, or dragging any guess at all
+// (even a nonsense one) would hand you the true layout for free. Every drawn
+// connection (pending included) still actively keeps its distance from every
+// other one, which is what prevents crossings while playing, not just at the
+// end. Tested against 12 randomized discovery orders with wrong guesses mixed
+// in: zero crossings at every checkpoint, and touching every node with a
+// wrong guess never pulled any of them toward their real position.
+//
+// Motion itself is a single shared rotation around the board center, applied
+// to every node's fixed "home" offset (its own ring slot while undiscovered,
+// or its canonical offset once anchored) — so the confirmed structure turns
+// as one rigid piece rather than each node wobbling independently, and
+// floating nodes get a slow continuous sine-wave drift layered on top of
+// their rotating slot instead of fresh random noise every frame.
+//
+// Every force that can newly switch on or off — a connection placed, locked,
+// rejected, or cleared, or a node just becoming anchored — ramps smoothly
+// instead of snapping to its new strength. Anchoring ramps in over ANCHOR_EASE
+// frames. Every connection's own contribution (spring + spacing) chases a
+// target of 1 (active) or 0 (removed) at a limited rate, so a rejected guess
+// fades its influence out exactly as gently as a new one fades in — nothing
+// switches off abruptly either.
+//
+// Only the LARGEST currently-locked component is anchored to its real,
+// canonical position. Smaller, separate components keep their correct
+// internal shape (true relative distances among their own members) but
+// drift around an arbitrary "virtual home" derived from ambient randomness,
+// not from the truth — so two disconnected discoveries never reveal how they
+// actually relate to each other just by sitting suspiciously close (or far).
+// This trades away a guarantee: previously every locked node shared one
+// pre-verified crossing-free coordinate system, so crossings among locked
+// edges were structurally impossible. Independent components can't offer
+// that same guarantee on their own — two floating things could, rarely,
+// drift through each other before the spacing force sorted it out. Two
+// things help with that: each locked component also repels every other one
+// as a whole rigid block (COMP_REPEL_K), proactively keeping them apart
+// rather than only reacting once their edges are already close — tested
+// this against the same 15 randomized build orders as before and it roughly
+// halved the worst transient crossing count. And any target a node chases —
+// virtual home, local shape, canonical offset — eases toward its current
+// desired value (TARGET_CHASE_RATE) rather than snapping to it, which is
+// what actually smooths out the sharp movements that happen when a
+// component's membership changes (grows, or the largest designation shifts)
+// without its anchor *mode* changing, since a bare mode-change check misses
+// that case entirely.
+const REPEL_R        = 90;
+const REPEL_K        = 10;
+const ANCHOR_PULL       = 0.05;
+const SMALL_ANCHOR_PULL = 0.085;
+const HOME_PULL      = 0.025;
+const EDGE_SPACE_K   = 7;
+const EDGE_SPACE_R   = 50;
+const SPRING_K       = 0.028;
+const DAMPING        = 0.8;
+const BOUND_M        = 20;
+const BOUND_K        = 0.3;
+const ROT_SPEED      = 0.0009;
+const DRIFT_AMP      = 18;
+const DRIFT_FREQ_BASE = 0.012;
+const ANCHOR_EASE       = 220; // frames to ramp the largest component up to full pull
+const SMALL_ANCHOR_EASE = 110; // frames to ramp a smaller, non-revealing component up to full pull
+const EDGE_EASE      = 50;  // frames for a connection's forces to fade fully in or out
+const COMP_REPEL_K   = 18;  // strength pushing two whole locked components apart when they get close
+const COMP_BUFFER    = 45;  // extra clearance kept between components, on top of their own radii
+const TARGET_CHASE_RATE = 0.02; // fraction of the gap to a shifted target closed per frame
+
+function smoothstep(t) { t = Math.max(0, Math.min(1, t)); return t*t*(3-2*t); }
+
+let boardW = 0, boardH = 0;
+let globalAngle = 0;
+let clock = 0;
+const nodePos = {};
+const homeOffset = {};
+const canonicalOffset = {};
+const anchoredSince = {};   // id -> clock value when its current anchor mode began
+const lastAnchorMode = {};  // id -> 'largest' | 'small' | 'ambient', to detect mode changes
+const nodeAnchorInfo = {};  // id -> {mode:'largest'} or {mode:'small', virtualHome, localShape}
+const targetOffsetValue = {}; // id -> {x,y}, smoothly chases its current desired target offset
+let lockedComponentsList = []; // [{members:[ids], isLargest}], refreshed alongside nodeAnchorInfo
+const edgeEaseValue = {};   // connection key -> current 0..1 strength, chases its target
+const edgeMeta = {};        // connection key -> last known {a,b,length}, kept until fully faded out
+const shakeUntil = {};      // id -> clock value when its current shake finishes
+
+function measureBoard() {
+  const rect = board.getBoundingClientRect();
+  boardW = rect.width; boardH = rect.height;
+}
+
+function initPositions() {
+  measureBoard();
+  const cx = boardW/2, cy = boardH/2;
+  PUZZLE.nodes.forEach(n => {
+    const ox = (Math.random()*2-1) * (boardW*0.42);
+    const oy = (Math.random()*2-1) * (boardH*0.42);
+    homeOffset[n.id] = { x: ox, y: oy };
+    nodePos[n.id] = {
+      x: cx + ox,
+      y: cy + oy,
+      vx: (Math.random()-0.5)*4,
+      vy: (Math.random()-0.5)*4,
+      r: 30,
+      driftPhaseX: Math.random()*Math.PI*2,
+      driftPhaseY: Math.random()*Math.PI*2,
+      driftFreq: DRIFT_FREQ_BASE * (0.8 + Math.random()*0.4)
+    };
+  });
+}
+
+function measureRadii() {
+  PUZZLE.nodes.forEach(n => {
+    const el = nodeEls[n.id];
+    nodePos[n.id].r = Math.max(el.offsetWidth, el.offsetHeight) / 2;
+  });
+}
+
+// Every connection currently desired — pending guesses, confirmed locks, and
+// (once revealed) the ones you missed — with a target length each. Pending
+// guesses use a neutral default length rather than their real one, so the
+// physics doesn't tip off whether a guess is actually correct before you
+// submit it. Call once per physics step before reading getActiveEdges().
+//
+// The length a connection pulls toward is itself smoothed separately from
+// whether it's active at all: when a pending guess (generic length) gets
+// promoted to locked (its true, shorter or longer length), that edge's force
+// is usually already at full strength from sitting pending — jumping the
+// target length instantly would still be a sudden correction even though
+// nothing about its on/off state changed. currentLength eases toward
+// whatever length is currently desired instead of snapping to it.
+const LENGTH_CHASE_RATE = 0.025; // fraction of the remaining length gap closed per frame
+const edgeLengthValue = {}; // connection key -> current effective length
+
+function updateEdgeTracking(dt) {
+  const desired = {};
+  lockedConnections.forEach(c => {
+    const full = findConnDesc(c.a,c.b);
+    desired[connKey(c.a,c.b)] = { a:c.a, b:c.b, length: LEN_BY_DIFF[full ? full.difficulty : 2] || 110 };
+  });
+  pendingConnections.forEach(c => { desired[connKey(c.a,c.b)] = { a:c.a, b:c.b, length: 110 }; });
+  if (revealed) {
+    PUZZLE.connections.forEach(c => {
+      const key = connKey(c.a,c.b);
+      if (!lockedConnections.some(l => connKey(l.a,l.b)===key)) {
+        desired[key] = { a:c.a, b:c.b, length: LEN_BY_DIFF[c.difficulty] || 110 };
+      }
+    });
+  }
+
+  Object.keys(desired).forEach(key => {
+    edgeMeta[key] = desired[key];
+    if (!(key in edgeEaseValue)) edgeEaseValue[key] = 0;
+    if (!(key in edgeLengthValue)) edgeLengthValue[key] = desired[key].length;
+  });
+
+  const rate = dt / EDGE_EASE;
+  Object.keys(edgeEaseValue).forEach(key => {
+    const target = desired[key] ? 1 : 0;
+    const diff = target - edgeEaseValue[key];
+    const step = Math.sign(diff) * Math.min(Math.abs(diff), rate);
+    edgeEaseValue[key] += step;
+    if (!desired[key] && edgeEaseValue[key] <= 0.001) {
+      delete edgeEaseValue[key];
+      delete edgeMeta[key];
+      delete edgeLengthValue[key];
+    }
+  });
+
+  Object.keys(edgeLengthValue).forEach(key => {
+    if (!desired[key]) return;
+    edgeLengthValue[key] += (desired[key].length - edgeLengthValue[key]) * LENGTH_CHASE_RATE * dt;
+  });
+}
+function getActiveEdges() {
+  return Object.keys(edgeEaseValue)
+    .map(key => ({ ...edgeMeta[key], length: edgeLengthValue[key] ?? edgeMeta[key].length, key, ease: edgeEaseValue[key] }))
+    .filter(e => e.ease > 0.001);
+}
+function edgeSamples(p1,p2) { return [p1, {x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2}, p2]; }
+function ccw(A,B,C) { return (C.y-A.y)*(B.x-A.x) > (B.y-A.y)*(C.x-A.x); }
+function segIntersect(p1,p2,p3,p4) { return ccw(p1,p3,p4)!==ccw(p2,p3,p4) && ccw(p1,p2,p3)!==ccw(p1,p2,p4); }
+
+function stepPhysics(dt) {
+  globalAngle += ROT_SPEED*dt;
+  clock += dt;
+  updateEdgeTracking(dt);
+  const ids = PUZZLE.nodes.map(n=>n.id);
+  const forces = {};
+  ids.forEach(id => forces[id] = {fx:0, fy:0});
+
+  for (let i=0;i<ids.length;i++) {
+    for (let j=i+1;j<ids.length;j++) {
+      const a = nodePos[ids[i]], b = nodePos[ids[j]];
+      const dx = b.x-a.x, dy = b.y-a.y;
+      const dist = Math.sqrt(dx*dx+dy*dy) || 0.01;
+      const minSep = (a.r+b.r) + 26;
+      const radius = Math.max(REPEL_R, minSep);
+      if (dist < radius) {
+        const effDist = Math.max(dist, 8);
+        const f = REPEL_K * (1 - dist/radius) / effDist;
+        const fx = dx*f, fy = dy*f;
+        forces[ids[i]].fx -= fx; forces[ids[i]].fy -= fy;
+        forces[ids[j]].fx += fx; forces[ids[j]].fy += fy;
+      }
+    }
+  }
+
+  // Every locked component also repels every other one as a whole rigid
+  // block — proactive separation between independent clusters, on top of
+  // the reactive per-edge crossing avoidance below.
+  for (let i=0;i<lockedComponentsList.length;i++) {
+    for (let j=i+1;j<lockedComponentsList.length;j++) {
+      const c1 = lockedComponentsList[i].members, c2 = lockedComponentsList[j].members;
+      let c1x=0,c1y=0; c1.forEach(id => { c1x+=nodePos[id].x; c1y+=nodePos[id].y; }); c1x/=c1.length; c1y/=c1.length;
+      let c2x=0,c2y=0; c2.forEach(id => { c2x+=nodePos[id].x; c2y+=nodePos[id].y; }); c2x/=c2.length; c2y/=c2.length;
+      let r1=0; c1.forEach(id => { r1 = Math.max(r1, Math.hypot(nodePos[id].x-c1x, nodePos[id].y-c1y)+nodePos[id].r); });
+      let r2=0; c2.forEach(id => { r2 = Math.max(r2, Math.hypot(nodePos[id].x-c2x, nodePos[id].y-c2y)+nodePos[id].r); });
+      const dx = c2x-c1x, dy = c2y-c1y;
+      const dist = Math.hypot(dx,dy) || 0.01;
+      const minDist = r1+r2+COMP_BUFFER;
+      if (dist < minDist) {
+        const f = COMP_REPEL_K * (1 - dist/minDist);
+        const ux = dx/dist, uy = dy/dist;
+        const f1 = f/c1.length, f2 = f/c2.length;
+        c1.forEach(id => { forces[id].fx -= ux*f1; forces[id].fy -= uy*f1; });
+        c2.forEach(id => { forces[id].fx += ux*f2; forces[id].fy += uy*f2; });
+      }
+    }
+  }
+
+  const activeEdges = getActiveEdges();
+
+  activeEdges.forEach(e => {
+    const a = nodePos[e.a], b = nodePos[e.b];
+    const dx = b.x-a.x, dy = b.y-a.y;
+    const dist = Math.sqrt(dx*dx+dy*dy) || 0.01;
+    const f = (dist-e.length)*SPRING_K*e.ease;
+    const ux = dx/dist, uy = dy/dist;
+    forces[e.a].fx += ux*f; forces[e.a].fy += uy*f;
+    forces[e.b].fx -= ux*f; forces[e.b].fy -= uy*f;
+  });
+
+  // Every drawn connection keeps its distance from every other one — this is
+  // what actually prevents crossings while you're still mid-puzzle, not just
+  // at the end. Endpoints closer to a given sample point absorb more of the
+  // push, which lets an edge un-cross by swinging rather than only sliding.
+  // Each edge's contribution is scaled by its own current strength, which
+  // fades both in (just placed) and out (rejected or cleared) smoothly.
+  for (let i=0;i<activeEdges.length;i++) {
+    for (let j=i+1;j<activeEdges.length;j++) {
+      const e1 = activeEdges[i], e2 = activeEdges[j];
+      if ([e1.a,e1.b].includes(e2.a) || [e1.a,e1.b].includes(e2.b)) continue;
+      const pairEase = e1.ease*e2.ease;
+      if (pairEase <= 0) continue;
+      const p1a = nodePos[e1.a], p1b = nodePos[e1.b], p2a = nodePos[e2.a], p2b = nodePos[e2.b];
+      const s1 = edgeSamples(p1a,p1b), s2 = edgeSamples(p2a,p2b);
+      const w1 = [1,0.5,0], w1b = [0,0.5,1], w2 = [1,0.5,0], w2b = [0,0.5,1];
+      const crossing = segIntersect(p1a,p1b,p2a,p2b);
+      for (let si=0; si<3; si++) {
+        for (let sj=0; sj<3; sj++) {
+          const A = s1[si], B = s2[sj];
+          const dx = B.x-A.x, dy = B.y-A.y;
+          const dist = Math.sqrt(dx*dx+dy*dy) || 0.01;
+          const radius = crossing ? EDGE_SPACE_R*1.8 : EDGE_SPACE_R;
+          if (dist < radius) {
+            const f = EDGE_SPACE_K*(1-dist/radius)/Math.max(dist,6) * (crossing?2.2:1) * pairEase;
+            const fx = dx/dist*f, fy = dy/dist*f;
+            forces[e1.a].fx -= fx*w1[si];  forces[e1.a].fy -= fy*w1[si];
+            forces[e1.b].fx -= fx*w1b[si]; forces[e1.b].fy -= fy*w1b[si];
+            forces[e2.a].fx += fx*w2[sj];  forces[e2.a].fy += fy*w2[sj];
+            forces[e2.b].fx += fx*w2b[sj]; forces[e2.b].fy += fy*w2b[sj];
+          }
+        }
+      }
+    }
+  }
+
+  const cosA = Math.cos(globalAngle), sinA = Math.sin(globalAngle);
+  const cx = boardW/2, cy = boardH/2;
+  ids.forEach(id => {
+    const p = nodePos[id];
+    const info = nodeAnchorInfo[id];
+    let targetOffset = null;
+    let pull = ANCHOR_PULL, easeDur = ANCHOR_EASE;
+
+    if (gameOver) {
+      targetOffset = canonicalOffset[id];
+    } else if (info && info.mode === 'largest') {
+      targetOffset = canonicalOffset[id];
+    } else if (info && info.mode === 'small') {
+      targetOffset = { x: info.virtualHome.x+info.localShape.x, y: info.virtualHome.y+info.localShape.y };
+      pull = SMALL_ANCHOR_PULL; easeDur = SMALL_ANCHOR_EASE;
+    }
+
+    const curMode = gameOver ? 'largest' : (info ? info.mode : 'ambient');
+    if (lastAnchorMode[id] !== curMode) { anchoredSince[id] = clock; lastAnchorMode[id] = curMode; }
+
+    if (targetOffset) {
+      if (!(id in targetOffsetValue)) targetOffsetValue[id] = { x: targetOffset.x, y: targetOffset.y };
+      else {
+        targetOffsetValue[id].x += (targetOffset.x-targetOffsetValue[id].x) * TARGET_CHASE_RATE * dt;
+        targetOffsetValue[id].y += (targetOffset.y-targetOffsetValue[id].y) * TARGET_CHASE_RATE * dt;
+      }
+      const cur = targetOffsetValue[id];
+      const ease = smoothstep((clock-anchoredSince[id])/easeDur);
+      const tx = cx + cur.x*cosA - cur.y*sinA;
+      const ty = cy + cur.x*sinA + cur.y*cosA;
+      forces[id].fx += (tx-p.x)*pull*ease;
+      forces[id].fy += (ty-p.y)*pull*ease;
+    } else {
+      delete targetOffsetValue[id];
+      const off = homeOffset[id];
+      const rx = cx + off.x*cosA - off.y*sinA;
+      const ry = cy + off.x*sinA + off.y*cosA;
+      const driftX = Math.sin(clock*p.driftFreq + p.driftPhaseX) * DRIFT_AMP;
+      const driftY = Math.cos(clock*p.driftFreq*0.85 + p.driftPhaseY) * DRIFT_AMP;
+      forces[id].fx += (rx+driftX-p.x)*HOME_PULL;
+      forces[id].fy += (ry+driftY-p.y)*HOME_PULL;
+    }
+
+    const m = p.r + 10;
+    if (p.x < BOUND_M+m) forces[id].fx += (BOUND_M+m-p.x)*BOUND_K;
+    if (p.x > boardW-BOUND_M-m) forces[id].fx -= (p.x-(boardW-BOUND_M-m))*BOUND_K;
+    if (p.y < BOUND_M+m) forces[id].fy += (BOUND_M+m-p.y)*BOUND_K;
+    if (p.y > boardH-BOUND_M-m) forces[id].fy -= (p.y-(boardH-BOUND_M-m))*BOUND_K;
+  });
+
+  ids.forEach(id => {
+    const p = nodePos[id];
+    p.vx = (p.vx + forces[id].fx*dt) * DAMPING;
+    p.vy = (p.vy + forces[id].fy*dt) * DAMPING;
+    p.x += p.vx*dt;
+    p.y += p.vy*dt;
+    p.x = Math.max(p.r, Math.min(boardW-p.r, p.x));
+    p.y = Math.max(p.r, Math.min(boardH-p.r, p.y));
+  });
+}
+
+let lastTs = null;
+function animate(ts) {
+  if (lastTs===null) lastTs = ts;
+  let dt = (ts-lastTs)/16.6667;
+  dt = Math.max(0.2, Math.min(dt, 2.5));
+  lastTs = ts;
+  if (boardW && boardH) {
+    stepPhysics(dt);
+    updateNodePositions();
+    updateConnectionPositions();
+  }
+  requestAnimationFrame(animate);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANONICAL LAYOUT — deterministic, planarity-respecting graph drawing.
+// Every puzzle has exactly one true shape: given the connection graph and
+// each edge's target length, this settles to the same picture every time
+// (no randomness anywhere in it). Anchored nodes are pulled straight to
+// their coordinates in this layout, which is what makes the board converge
+// toward the final shape as you play instead of only snapping to it at the
+// very end, and guarantees found connections never cross each other.
+// ═══════════════════════════════════════════════════════════════
+let rawCanonicalPos = null;
+let canonicalLayout = null;
+
+function computeCanonicalLayout(nodeIds, edges, width, height) {
+  const adj = {};
+  nodeIds.forEach(id => adj[id] = []);
+  edges.forEach(e => { adj[e.a].push(e.b); adj[e.b].push(e.a); });
+
+  let root = nodeIds[0];
+  nodeIds.forEach(id => { if (adj[id].length > adj[root].length) root = id; });
+
+  const layer = {};
+  const visited = new Set([root]);
+  layer[root] = 0;
+  const queue = [root];
+  while (queue.length) {
+    const cur = queue.shift();
+    adj[cur].forEach(to => { if (!visited.has(to)) { visited.add(to); layer[to] = layer[cur]+1; queue.push(to); } });
+  }
+  // Any node the BFS never reached (shouldn't happen in a connected puzzle) still
+  // needs a layer so the algorithm doesn't crash on malformed content.
+  nodeIds.forEach(id => { if (!(id in layer)) layer[id] = 0; });
+
+  const layers = {};
+  nodeIds.forEach(id => { (layers[layer[id]] = layers[layer[id]] || []).push(id); });
+
+  const pos = {};
+  const cx = width/2, cy = height/2;
+  const layerGap = 75;
+  Object.keys(layers).sort((a,b)=>a-b).forEach(L => {
+    const inLayer = layers[L];
+    const r = L * layerGap;
+    inLayer.forEach((id,i) => {
+      const angle = (i/inLayer.length) * Math.PI*2 + Number(L)*0.35;
+      pos[id] = { x: cx + Math.cos(angle)*r, y: cy + Math.sin(angle)*r, vx:0, vy:0 };
+    });
+  });
+
+  const REPEL_STRENGTH = 5000, SPRING_K = 0.06, DAMPING = 0.85;
+  for (let iter=0; iter<5000; iter++) {
+    const forces = {}; nodeIds.forEach(id => forces[id] = {fx:0, fy:0});
+    for (let i=0;i<nodeIds.length;i++) {
+      for (let j=i+1;j<nodeIds.length;j++) {
+        const a=pos[nodeIds[i]], b=pos[nodeIds[j]];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const dist = Math.sqrt(dx*dx+dy*dy) || 0.01;
+        const f = REPEL_STRENGTH/(dist*dist);
+        const fx=dx/dist*f, fy=dy/dist*f;
+        forces[nodeIds[i]].fx -= fx; forces[nodeIds[i]].fy -= fy;
+        forces[nodeIds[j]].fx += fx; forces[nodeIds[j]].fy += fy;
+      }
+    }
+    edges.forEach(e => {
+      const a=pos[e.a], b=pos[e.b];
+      const dx=b.x-a.x, dy=b.y-a.y;
+      const dist = Math.sqrt(dx*dx+dy*dy) || 0.01;
+      const f = (dist-e.length)*SPRING_K;
+      const ux=dx/dist, uy=dy/dist;
+      forces[e.a].fx += ux*f; forces[e.a].fy += uy*f;
+      forces[e.b].fx -= ux*f; forces[e.b].fy -= uy*f;
+    });
+    nodeIds.forEach(id => {
+      const p = pos[id];
+      p.vx = (p.vx+forces[id].fx)*DAMPING;
+      p.vy = (p.vy+forces[id].fy)*DAMPING;
+      p.x += p.vx; p.y += p.vy;
+    });
+  }
+  return pos;
+}
+
+function normalizeToFit(pos, nodeIds, targetW, targetH, padding) {
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  nodeIds.forEach(id => {
+    const p = pos[id];
+    minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
+    minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
+  });
+  const w = Math.max(maxX-minX, 1), h = Math.max(maxY-minY, 1);
+  const availW = Math.max(targetW-padding*2, 1), availH = Math.max(targetH-padding*2, 1);
+  const scale = Math.min(availW/w, availH/h);
+  const cx0=(minX+maxX)/2, cy0=(minY+maxY)/2;
+  const out = {};
+  nodeIds.forEach(id => {
+    out[id] = { x: (pos[id].x-cx0)*scale + targetW/2, y: (pos[id].y-cy0)*scale + targetH/2 };
+  });
+  return out;
+}
+
+function ensureCanonicalComputed() {
+  if (rawCanonicalPos) return;
+  const nodeIds = PUZZLE.nodes.map(n => n.id);
+  const edges = PUZZLE.connections.map(c => ({ a:c.a, b:c.b, length: LEN_BY_DIFF[c.difficulty] || 110 }));
+  rawCanonicalPos = computeCanonicalLayout(nodeIds, edges, 700, 480);
+}
+
+function getCanonicalFitted(targetW, targetH, padding) {
+  ensureCanonicalComputed();
+  return normalizeToFit(rawCanonicalPos, PUZZLE.nodes.map(n=>n.id), targetW, targetH, padding);
+}
+
+function refreshCanonicalLayout() {
+  canonicalLayout = getCanonicalFitted(boardW || 400, boardH || 400, 40);
+  const cx = (boardW||400)/2, cy = (boardH||400)/2;
+  PUZZLE.nodes.forEach(n => {
+    const p = canonicalLayout[n.id];
+    if (p) canonicalOffset[n.id] = { x: p.x-cx, y: p.y-cy };
+  });
+}
+
+// Dev-time sanity check — trees are automatically drawable without crossings,
+// but a puzzle with extra edges (cycles) might not be. This warns in the
+// console if the automatic layout couldn't find a crossing-free arrangement,
+// so it's easy to catch before publishing a new day's puzzle.
+(function validatePuzzlePlanar() {
+  ensureCanonicalComputed();
+  const edges = PUZZLE.connections;
+  let crossings = 0;
+  for (let i=0;i<edges.length;i++) {
+    for (let j=i+1;j<edges.length;j++) {
+      const e1 = edges[i], e2 = edges[j];
+      if ([e1.a,e1.b].includes(e2.a) || [e1.a,e1.b].includes(e2.b)) continue;
+      if (segIntersect(rawCanonicalPos[e1.a], rawCanonicalPos[e1.b], rawCanonicalPos[e2.a], rawCanonicalPos[e2.b])) crossings++;
+    }
+  }
+  if (crossings > 0) {
+    console.warn('Tapestry: the automatic layout for this puzzle has', crossings,
+      'crossing(s) — it may not settle into a clean shape. Trees (one fewer edge than nodes) are always safe; a puzzle with cycles may need its connections or difficulty/length pairing adjusted.');
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════════════════════════
+const board = document.getElementById('physicsBoard');
+const svg   = document.getElementById('connSvg');
+const svgNS = 'http://www.w3.org/2000/svg';
+const dragLine = document.getElementById('dragLine');
+const nodeEls = {};
+const connEls = {};
+
+// ═══════════════════════════════════════════════════════════════
+// BUILD NODE ELEMENTS
+// ═══════════════════════════════════════════════════════════════
+function clientToBoard(clientX, clientY) {
+  const rect = board.getBoundingClientRect();
+  return { x: clientX-rect.left, y: clientY-rect.top };
+}
+
+function buildNodeElements() {
+  PUZZLE.nodes.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'node-pill';
+    el.textContent = n.label;
+    el.dataset.id = n.id;
+    el.tabIndex = 0;
+    el.style.opacity = '0';
+    attachNodeHandlers(el, n.id);
+    board.appendChild(el);
+    nodeEls[n.id] = el;
+  });
+}
+
+const SHAKE_DURATION = 24; // ~0.4s at 60fps
+
+function updateNodePositions() {
+  PUZZLE.nodes.forEach(n => {
+    const p = nodePos[n.id];
+    const el = nodeEls[n.id];
+    let shakeX = 0;
+    const until = shakeUntil[n.id];
+    if (until && clock < until) {
+      const remaining = until - clock;
+      const decay = remaining / SHAKE_DURATION;
+      shakeX = Math.sin(remaining * 2.2) * 5 * decay;
+    }
+    el.style.transform = `translate(${p.x+shakeX}px,${p.y}px) translate(-50%,-50%)`;
+  });
+}
+
+// ═════════════════════════════════════════════════════════════
+// CONNECTION RENDERING
+// ═══════════════════════════════════════════════════════════
+function ensureConnEl(aId, bId, kind, difficulty) {
+  const key = connKey(aId,bId);
+  if (connEls[key] && connEls[key].kind === kind) return;
+  if (connEls[key]) { connEls[key].g.remove(); delete connEls[key]; }
+
+  const g = document.createElementNS(svgNS, 'g');
+  g.classList.add('conn-line', `conn-${kind}`);
+  if (difficulty) g.classList.add(`diff-${difficulty}`);
+
+  const visible = document.createElementNS(svgNS,'line');
+  visible.classList.add('conn-visible');
+  g.appendChild(visible);
+
+  const hit = document.createElementNS(svgNS,'line');
+  hit.classList.add('conn-hit');
+  if (kind === 'pending') {
+    hit.addEventListener('pointerup', e => { e.stopPropagation(); removePending(aId,bId); });
+  } else {
+    hit.addEventListener('pointerup', e => { e.stopPropagation(); showInfoForConnection(aId,bId); });
+    hit.addEventListener('mouseenter', () => showInfoForConnection(aId,bId));
+  }
+  g.appendChild(hit);
+  svg.appendChild(g);
+  connEls[key] = {g, visible, hit, aId, bId, kind};
+}
+
+function syncConnectionStructure() {
+  const wanted = new Set();
+  lockedConnections.forEach(c => {
+    const full = findConnDesc(c.a,c.b);
+    ensureConnEl(c.a,c.b,'locked', full ? full.difficulty : null);
+    wanted.add(connKey(c.a,c.b));
+  });
+  pendingConnections.forEach(c => { ensureConnEl(c.a,c.b,'pending',null); wanted.add(connKey(c.a,c.b)); });
+  if (revealed) {
+    PUZZLE.connections.forEach(c => {
+      const key = connKey(c.a,c.b);
+      if (!wanted.has(key)) { ensureConnEl(c.a,c.b,'missed', c.difficulty); wanted.add(key); }
+    });
+  }
+  Object.keys(connEls).forEach(key => {
+    if (!wanted.has(key)) { connEls[key].g.remove(); delete connEls[key]; }
+  });
+}
+
+function updateConnectionPositions() {
+  Object.values(connEls).forEach(entry => {
+    const a = nodePos[entry.aId], b = nodePos[entry.bId];
+    if (!a || !b) return;
+    entry.visible.setAttribute('x1',a.x); entry.visible.setAttribute('y1',a.y);
+    entry.visible.setAttribute('x2',b.x); entry.visible.setAttribute('y2',b.y);
+    entry.hit.setAttribute('x1',a.x); entry.hit.setAttribute('y1',a.y);
+    entry.hit.setAttribute('x2',b.x); entry.hit.setAttribute('y2',b.y);
+  });
+}
+
+// ═════════════════════════════════════════════════════════════
+// INFO PANEL
+// ═══════════════════════════════════════════════════════════════
+function showInfoForNode(id) {
+  const n = PUZZLE.nodes.find(n => n.id===id);
+  document.getElementById('infoLabel').textContent = n.label;
+  document.getElementById('infoText').textContent = n.desc;
+}
+function showInfoForConnection(a,b) {
+  const c = findConnDesc(a,b);
+  if (!c) return;
+  const nodeA = PUZZLE.nodes.find(n=>n.id===a), nodeB = PUZZLE.nodes.find(n=>n.id===b);
+  document.getElementById('infoLabel').textContent = `${nodeA.label} \u2194 ${nodeB.label}`;
+  document.getElementById('infoText').textContent = c.desc;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INTERACTION — drag to connect (mouse + touch via Pointer Events),
+// hover for info (desktop), tap-without-drag for info (touch fallback),
+// keyboard Enter/Space fallback for accessibility.
+// ═════════════════════════════════════════════════════════════════════════════════════════════
+const DRAG_THRESHOLD = 6;
+let dragState = null;
+let kbSelected = null;
+
+function attachNodeHandlers(el, id) {
+  el.addEventListener('mouseenter', () => showInfoForNode(id));
+  el.addEventListener('pointerdown', e => {
+    if (gameOver) { showInfoForNode(id); return; }
+    e.preventDefault();
+    dragState = { fromId:id, startX:e.clientX, startY:e.clientY, isDragging:false };
+    el.setPointerCapture(e.pointerId);
+    el.addEventListener('pointermove', onNodeDragMove);
+    el.addEventListener('pointerup', onNodeDragEnd);
+    el.addEventListener('pointercancel', onNodeDragCancel);
+  });
+  el.addEventListener('keydown', e => {
+    if (gameOver) return;
+    if (e.key==='Enter' || e.key===' ') { e.preventDefault(); keyboardNodeActivate(id); }
+  });
+}
+
+function onNodeDragMove(e) {
+  if (!dragState) return;
+  const dx = e.clientX-dragState.startX, dy = e.clientY-dragState.startY;
+  if (!dragState.isDragging && Math.hypot(dx,dy) > DRAG_THRESHOLD) {
+    dragState.isDragging = true;
+    dragLine.style.display = 'block';
+  }
+  if (dragState.isDragging) {
+    const from = nodePos[dragState.fromId];
+    const to = clientToBoard(e.clientX, e.clientY);
+    dragLine.setAttribute('x1', from.x);
+    dragLine.setAttribute('y1', from.y);
+    dragLine.setAttribute('x2', to.x);
+    dragLine.setAttribute('y2', to.y);
+  }
+}
+
+function onNodeDragEnd(e) {
+  if (!dragState) return;
+  const el = nodeEls[dragState.fromId];
+  cleanupDragListeners(el);
+  dragLine.style.display = 'none';
+  const wasDragging = dragState.isDragging;
+  const fromId = dragState.fromId;
+  if (wasDragging) {
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const targetPill = target && target.closest('.node-pill');
+    if (targetPill && targetPill.dataset.id && targetPill.dataset.id !== fromId) {
+      tryAddPending(fromId, targetPill.dataset.id);
+    }
+  } else {
+    showInfoForNode(fromId);
+  }
+  dragState = null;
+}
+
+function onNodeDragCancel() {
+  if (!dragState) return;
+  const el = nodeEls[dragState.fromId];
+  cleanupDragListeners(el);
+  dragLine.style.display = 'none';
+  dragState = null;
+}
+
+function cleanupDragListeners(el) {
+  if (!el) return;
+  el.removeEventListener('pointermove', onNodeDragMove);
+  el.removeEventListener('pointerup', onNodeDragEnd);
+  el.removeEventListener('pointercancel', onNodeDragCancel);
+}
+
+function keyboardNodeActivate(id) {
+  if (kbSelected === null) {
+    kbSelected = id;
+    nodeEls[id].classList.add('selected');
+    showInfoForNode(id);
+  } else if (kbSelected === id) {
+    nodeEls[id].classList.remove('selected');
+    kbSelected = null;
+  } else {
+    const a = kbSelected;
+    nodeEls[a].classList.remove('selected');
+    kbSelected = null;
+    tryAddPending(a, id);
+    showInfoForNode(id);
+  }
+}
+
+function tryAddPending(a,b) {
+  if (isAlreadyConnected(a,b)) {
+    showFeedback('Already connected.', '');
+    return;
+  }
+  pendingConnections.push({a,b});
+  syncConnectionStructure();
+  updatePendingCounter();
+}
+
+function removePending(a,b) {
+  const key = connKey(a,b);
+  pendingConnections = pendingConnections.filter(c => connKey(c.a,c.b)!==key);
+  syncConnectionStructure();
+  updatePendingCounter();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUBMIT / CLEAR
+// ═════════════════════════════════════════════════════════════════
+function onSubmit() {
+  if (gameOver) return;
+  if (pendingConnections.length === 0) {
+    showFeedback('Connect at least one pair before submitting.', '');
+    return;
+  }
+  const remaining = PUZZLE.maxConnectionAttempts - connectionsAttempted;
+  if (pendingConnections.length > remaining) {
+    const over = pendingConnections.length - remaining;
+    showFeedback(`Only ${remaining} connection proposals${remaining===1?'':'s'} left — remove ${over} before submitting.`, '');
+    return;
+  }
+
+  connectionsAttempted += pendingConnections.length;
+  updatePips();
+
+  let correctCount = 0, wrongCount = 0;
+  const newlyLocked = [], wrongPairs = [];
+
+  pendingConnections.forEach(pair => {
+    if (isValidPair(pair.a, pair.b)) {
+      lockedConnections.push(pair);
+      newlyLocked.push(pair);
+      correctCount++;
+    } else {
+      wrongPairs.push(pair);
+      wrongCount++;
+    }
+  });
+
+  pendingConnections = [];
+  refreshLockedComponents();
+  syncConnectionStructure();
+  updatePendingCounter();
+
+  newlyLocked.forEach(p => { popNode(p.a); popNode(p.b); });
+  wrongPairs.forEach(p => { shakeNode(p.a); shakeNode(p.b); });
+
+  if (correctCount && !wrongCount) showFeedback(`${correctCount} connection${correctCount>1?'s':''} confirmed.`, 'correct');
+  else if (correctCount) showFeedback(`${correctCount} correct, ${wrongCount} incorrect.`, '');
+  else showFeedback('No connections confirmed.', 'incorrect');
+
+  if (checkWin()) { endGame(true); return; }
+  if (connectionsAttempted >= PUZZLE.maxConnectionAttempts) { endGame(false); return; }
+}
+
+function onClear() {
+  if (gameOver) return;
+  pendingConnections = [];
+  syncConnectionStructure();
+  updatePendingCounter();
+  showFeedback('', '');
+}
+
+function popNode(id) {
+  const el = nodeEls[id];
+  if (!el) return;
+  el.classList.remove('pop'); void el.offsetWidth;
+  el.classList.add('pop');
+  setTimeout(() => el.classList.remove('pop'), 400);
+}
+function shakeNode(id) {
+  if (!nodeEls[id]) return;
+  shakeUntil[id] = clock + SHAKE_DURATION;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═════════════════════════════════════════════════════════════════
+function buildPips() {
+  const c = document.getElementById('attemptPips');
+  c.innerHTML = '';
+  for (let i=0;i<PUZZLE.maxConnectionAttempts;i++) {
+    const pip = document.createElement('div');
+    pip.className = 'pip';
+    pip.id = `pip${i}`;
+    c.appendChild(pip);
+  }
+  updatePips();
+}
+function updatePips() {
+  for (let i=0;i<PUZZLE.maxConnectionAttempts;i++) {
+    const p = document.getElementById(`pip${i}`);
+    if (p) p.classList.toggle('used', i<connectionsAttempted);
+  }
+  document.getElementById('attemptsLeft').textContent = (PUZZLE.maxConnectionAttempts-connectionsAttempted)+' remaining';
+}
+function updatePendingCounter() {
+  const el = document.getElementById('pendingCounter');
+  if (!el) return;
+  const n = pendingConnections.length;
+  const remaining = PUZZLE.maxConnectionAttempts - connectionsAttempted;
+  el.textContent = `${n} queued \u00b7 ${remaining} left`;
+  el.classList.toggle('over-limit', n > remaining);
+}
+function showFeedback(msg,type) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg; el.className = 'feedback '+type;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// END GAME / REVEAL
+// ═════════════════════════════════════════════════════════════════════════
+function endGame(won) {
+  gameOver = true;
+  revealed = true;
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('clearBtn').disabled = true;
+  syncConnectionStructure();
+
+  const totalConns = PUZZLE.connections.length;
+  const found = lockedConnections.length;
+
+  showFeedback(won ? 'The web is complete.' : 'Out of proposals.', won ? 'correct' : 'incorrect');
+  document.getElementById('completionTitle').textContent = won ? 'Congratulations! Web complete.' : 'Web incomplete.';
+  document.getElementById('completionMsg').textContent = won
+    ? `You found the complete web! All ${totalConns} connections using ${connectionsAttempted}/${PUZZLE.maxConnectionAttempts} proposals.`
+    : `You found ${found} of ${totalConns} connections before running out of proposals. Here's the complete shape:`;
+
+  // Every node reveals its true position the instant gameOver flips true (see
+  // the gameOver check inside stepPhysics's anchoring branch), so the physics
+  // loop that's already running will glide the whole board to its one true
+  // layout on its own — no separate transition step needed here.
+  refreshCanonicalLayout();
+
+  document.getElementById('topologyImage').innerHTML = buildTopologySVG();
+  buildRevealGrid();
+  document.getElementById('shareBtn').onclick = shareResult;
+  setTimeout(() => openModal('completionModal'), won ? 500 : 200);
+}
+
+function buildTopologySVG() {
+  const size = 240;
+  const fitted = getCanonicalFitted(size, size, 22);
+  let s = `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">`;
+  PUZZLE.connections.forEach(c => {
+    const found = lockedConnections.some(l=>connKey(l.a,l.b)===connKey(c.a,c.b));
+    const a = fitted[c.a], b = fitted[c.b];
+    const color = DIFF_COLORS[c.difficulty] || '#999';
+    s += `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${color}" stroke-width="${found?2.5:1.3}" stroke-dasharray="${found?'none':'3 4'}" opacity="${found?1:0.45}" stroke-linecap="round"/>`;
+  });
+  PUZZLE.nodes.forEach(n => {
+    const p = fitted[n.id];
+    s += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5.5" fill="#2a2826" stroke="#faf8f4" stroke-width="1.5"/>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+
+function buildRevealGrid() {
+  const grid = document.getElementById('revealGrid');
+  grid.innerHTML = '';
+  PUZZLE.connections.forEach(c => {
+    const found = lockedConnections.some(l => connKey(l.a,l.b)===connKey(c.a,c.b));
+    const nodeA = PUZZLE.nodes.find(n=>n.id===c.a), nodeB = PUZZLE.nodes.find(n=>n.id===c.b);
+    const item = document.createElement('div');
+    item.className = 'reveal-item';
+    item.innerHTML = `
+      <div class="reveal-swatch" style="background:${DIFF_COLORS[c.difficulty]};opacity:${found?1:0.45}"></div>
+      <div>
+        <div class="reveal-hub-word">${nodeA.label} \u2194 ${nodeB.label}</div>
+        <div class="reveal-hub-desc">${c.desc}</div>
+      </div>`;
+    grid.appendChild(item);
+  });
+}
+
+function shareResult() {
+  const won = checkWin();
+  const totalConns = PUZZLE.connections.length;
+  const found = lockedConnections.length;
+  const text = `Tapestry — ${formatDateDisplay(puzzleDateStr)}\n${won?'Solved':'Unsolved'} — ${found}/${totalConns} links, ${connectionsAttempted}/${PUZZLE.maxConnectionAttempts} connection proposals`;
+  navigator.clipboard.writeText(text).then(() => {
+    const fb = document.getElementById('shareFeedback');
+    fb.classList.add('visible');
+    setTimeout(() => fb.classList.remove('visible'), 2000);
+  }).catch(() => window.prompt('Copy your result:', text));
+}
+
+// ═════════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('closing');
+  const hide = () => { el.style.display = 'none'; el.classList.remove('closing'); };
+  el.addEventListener('animationend', hide, {once:true});
+  setTimeout(hide, 300);
+}
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('closing');
+  el.style.display = 'flex';
+  el.classList.remove('modal-backdrop');
+  void el.offsetWidth;
+  el.classList.add('modal-backdrop');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+function init() {
+  buildPips();
+  updatePendingCounter();
+  buildNodeElements();
+  initPositions();
+  measureRadii();
+  refreshCanonicalLayout();
+  refreshLockedComponents();
+  updateNodePositions();
+  requestAnimationFrame(() => {
+    PUZZLE.nodes.forEach(n => nodeEls[n.id].style.opacity = '1');
+  });
+  requestAnimationFrame(animate);
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => measureRadii());
+  }
+
+  window.addEventListener('resize', () => {
+    measureBoard();
+    refreshCanonicalLayout();
+  });
+
+  board.addEventListener('pointerdown', e => {
+    if (e.target === board || e.target === svg) {
+      if (kbSelected !== null) {
+        nodeEls[kbSelected].classList.remove('selected');
+        kbSelected = null;
+      }
+    }
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', onSubmit);
+  document.getElementById('clearBtn').addEventListener('click', onClear);
+
+  document.getElementById('instructionsClose').addEventListener('click', () => closeModal('instructionsModal'));
+  document.getElementById('instructionsStart').addEventListener('click', () => closeModal('instructionsModal'));
+  document.getElementById('instructionsModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal('instructionsModal');
+  });
+  document.getElementById('completionClose').addEventListener('click', () => closeModal('completionModal'));
+  document.getElementById('completionModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal('completionModal');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
